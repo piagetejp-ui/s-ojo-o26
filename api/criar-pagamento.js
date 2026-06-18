@@ -168,13 +168,14 @@ module.exports = async function handler(req, res) {
     const payloadInfinite = {
       handle,
       order_nsu: orderNsu,
-      redirect_url: `${baseUrl}/obrigado.html`,
+      redirect_url: `${baseUrl}/obrigado.html?order_nsu=${encodeURIComponent(orderNsu)}`,
       webhook_url: `${baseUrl}/api/webhook-infinitepay`,
+      description: `São João da Fé 2026 - ${calc.quantidade} ingresso(s) - ${aluno} - ${turma}`,
       items: [
         {
           quantity: 1,
           price: calc.totalCentavos,
-          description: `São João da Fé 2026 - ${calc.quantidade} ingresso(s)`
+          description: `São João da Fé 2026 - ${calc.quantidade} ingresso(s) - ${aluno} - ${turma}`
         }
       ]
 };
@@ -191,6 +192,23 @@ module.exports = async function handler(req, res) {
     }
 
     // Não enviamos address. O endereço, se aparecer, deve ser controlado nas configurações do checkout da InfinitePay.
+
+    await db.collection(COLLECTION).doc(orderNsu).set({
+      payloadResumoInfinitePay: {
+        handle,
+        order_nsu: orderNsu,
+        redirect_url: payloadInfinite.redirect_url,
+        webhook_url: payloadInfinite.webhook_url,
+        description: payloadInfinite.description || "",
+        items: payloadInfinite.items || [],
+        customer: {
+          name: payloadInfinite.customer?.name || "",
+          email: payloadInfinite.customer?.email || "",
+          phone_number: payloadInfinite.customer?.phone_number || ""
+        }
+      },
+      atualizadoEm: new Date().toISOString()
+    }, { merge: true });
 
     const response = await fetch("https://api.checkout.infinitepay.io/links", {
       method: "POST",
@@ -238,6 +256,8 @@ module.exports = async function handler(req, res) {
 
     await db.collection(COLLECTION).doc(orderNsu).set({
       checkoutUrl,
+      redirectUrl: `${baseUrl}/obrigado.html?order_nsu=${encodeURIComponent(orderNsu)}`,
+      webhookUrl: `${baseUrl}/api/webhook-infinitepay`,
       respostaCriacaoLink: data,
       atualizadoEm: new Date().toISOString()
     }, { merge: true });

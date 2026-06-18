@@ -108,7 +108,8 @@ module.exports = async function handler(req, res) {
     let data = {};
     try { data = JSON.parse(text); } catch { data = { raw: text }; }
 
-    const paid = Boolean(data.paid || data.success === true || String(data.status || "").toLowerCase() === "paid");
+    const statusText = String(data.status || data.payment_status || "").toLowerCase();
+    const paid = Boolean(data.paid === true || statusText === "paid" || statusText === "approved" || statusText === "aprovado");
     const agora = new Date().toISOString();
 
     if (paid) {

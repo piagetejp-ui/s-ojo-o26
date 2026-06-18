@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Pagamento recebido | São João da Fé</title>
+  <title>Pagamento | São João da Fé</title>
   <style>
     body {
       margin:0;
@@ -16,7 +16,7 @@
       padding:18px;
     }
     .card {
-      width:min(520px,100%);
+      width:min(540px,100%);
       background:#fffdf6;
       border-radius:26px;
       padding:24px;
@@ -39,9 +39,36 @@
       padding:14px;
       font-weight:800;
     }
-    a {
-      display:inline-block;
+    .small {
+      font-size:.86rem;
+      color:#64748b;
+      margin-top:10px;
+    }
+    .actions {
+      display:flex;
+      justify-content:center;
+      gap:10px;
+      flex-wrap:wrap;
       margin-top:14px;
+    }
+    button, a.btn {
+      border:0;
+      border-radius:14px;
+      padding:11px 14px;
+      font-weight:900;
+      cursor:pointer;
+      text-decoration:none;
+      display:inline-block;
+    }
+    .primary {
+      background:#09256f;
+      color:white;
+    }
+    .secondary {
+      background:#eef2ff;
+      color:#09256f;
+    }
+    a {
       color:#09256f;
       font-weight:900;
     }
@@ -50,28 +77,63 @@
 <body>
   <main class="card">
     <h1>Obrigado!</h1>
-    <p>Seu pagamento foi finalizado na InfinitePay. A confirmação será enviada automaticamente para o controle de entrega da escola.</p>
+    <p>
+      Se o Pix já foi pago, vamos tentar confirmar automaticamente no sistema da escola.
+      Em alguns casos a InfinitePay pode levar alguns instantes para retornar a confirmação.
+    </p>
+
     <div class="status" id="statusBox">Verificando pagamento...</div>
+    <div class="small" id="orderBox"></div>
+
+    <div class="actions">
+      <button class="primary" id="checkBtn" type="button">Verificar novamente</button>
+      <a class="btn secondary" href="/" rel="noopener">Abrir controle da escola</a>
+    </div>
+
     <a id="receiptLink" href="#" target="_blank" rel="noopener" style="display:none;">Abrir comprovante</a>
   </main>
 
   <script>
-    async function verificar() {
-      const params = new URLSearchParams(location.search);
-      const receipt = params.get("receipt_url");
-      const orderNsu = params.get("order_nsu");
-      const transactionNsu = params.get("transaction_nsu");
-      const slug = params.get("slug");
+    const params = new URLSearchParams(location.search);
+    const receipt = params.get("receipt_url");
+    const orderNsu =
+      params.get("order_nsu") ||
+      localStorage.getItem("saojoao26_last_order_nsu") ||
+      "";
 
-      if (receipt) {
-        const a = document.getElementById("receiptLink");
-        a.href = receipt;
-        a.style.display = "inline-block";
+    const transactionNsu = params.get("transaction_nsu") || "";
+    const slug = params.get("slug") || "";
+    let attempts = 0;
+    let timer = null;
+
+    if (receipt) {
+      const a = document.getElementById("receiptLink");
+      a.href = receipt;
+      a.style.display = "inline-block";
+    }
+
+    if (orderNsu) {
+      document.getElementById("orderBox").textContent = `Pedido: ${orderNsu}`;
+    }
+
+    function setStatus(text) {
+      document.getElementById("statusBox").textContent = text;
+    }
+
+    async function verificar(manual = false) {
+      if (!orderNsu) {
+        setStatus("Pagamento concluído. Se a compra não aparecer no controle, procure a secretaria com o comprovante.");
+        return false;
       }
 
-      if (!orderNsu) {
-        document.getElementById("statusBox").textContent = "Pagamento concluído. Pode procurar a secretaria para entrega.";
-        return;
+      attempts += 1;
+
+      if (manual) {
+        setStatus("Verificando novamente...");
+      } else if (attempts === 1) {
+        setStatus("Verificando pagamento...");
+      } else {
+        setStatus(`Aguardando confirmação da InfinitePay... tentativa ${attempts}`);
       }
 
       try {
@@ -85,19 +147,35 @@
           })
         });
 
-        const data = await resp.json();
+        const data = await resp.json().catch(() => ({}));
 
         if (resp.ok && data.paid) {
-          document.getElementById("statusBox").textContent = "Pagamento confirmado. Seu pedido já está no controle da escola.";
-        } else {
-          document.getElementById("statusBox").textContent = "Pagamento recebido. A confirmação pode levar alguns instantes.";
+          setStatus("Pagamento confirmado. Seu pedido já está no controle da escola.");
+          clearInterval(timer);
+          return true;
         }
+
+        if (attempts >= 12) {
+          clearInterval(timer);
+          setStatus("Pagamento recebido pela InfinitePay, mas ainda não confirmado automaticamente aqui. A secretaria poderá conferir pelo comprovante.");
+        }
+
+        return false;
       } catch {
-        document.getElementById("statusBox").textContent = "Pagamento recebido. A secretaria poderá conferir pelo comprovante.";
+        if (attempts >= 12) {
+          clearInterval(timer);
+          setStatus("Não consegui verificar agora. A secretaria poderá conferir pelo comprovante.");
+        } else {
+          setStatus("Tentando verificar novamente...");
+        }
+        return false;
       }
     }
 
+    document.getElementById("checkBtn").addEventListener("click", () => verificar(true));
+
     verificar();
+    timer = setInterval(() => verificar(false), 5000);
   </script>
 </body>
 </html>

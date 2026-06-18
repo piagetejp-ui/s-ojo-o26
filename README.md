@@ -84,3 +84,27 @@ A `FIREBASE_PRIVATE_KEY` deve ser copiada do JSON da Service Account. Se o Verce
 - O checkout voltou a enviar 1 item com o valor total, modelo mais simples/estável.
 - Quantidade, desconto e total continuam salvos corretamente no Firebase.
 - E-mail agora aparece no controle e no relatório CSV.
+
+
+## Ajustes da versão 6
+
+- `redirect_url` agora leva `order_nsu` já fixo na URL de obrigado.
+- A página de compra salva o último `order_nsu` no navegador antes de redirecionar para a InfinitePay.
+- A página `obrigado.html` tenta confirmar o pagamento automaticamente várias vezes.
+- A página `obrigado.html` tem botão `Verificar novamente`.
+- A verificação de pagamento ficou mais conservadora: só marca como pago quando `paid === true` ou status equivalente aprovado/pago.
+- Isso melhora a chance de confirmação quando a InfinitePay demora para retornar ou quando volta sem todos os parâmetros.
+
+
+## Ajustes da versão 7
+
+- Checkout voltou a amarrar a descrição completa do produto no payload:
+  - São João da Fé 2026
+  - quantidade de ingressos
+  - nome do aluno
+  - turma
+- Mantém `customer` com nome, e-mail e telefone para pré-preenchimento.
+- Não envia endereço.
+- Mantém item único com valor total, modelo mais simples que funcionou melhor no primeiro teste.
+- Salva `payloadResumoInfinitePay` no Firestore para auditoria do que foi enviado para a InfinitePay.
+- Mantém reforço de confirmação da V6.
