@@ -60,3 +60,27 @@ A `FIREBASE_PRIVATE_KEY` deve ser copiada do JSON da Service Account. Se o Verce
 - Filtro `Devolvidos` para consultar pedidos devolvidos.
 - Filtro `Tentativas aguardando pagamento` para localizar tentativas não concluídas.
 - Atenção: marcar como devolvido no sistema não estorna automaticamente a InfinitePay; o estorno financeiro deve ser feito pelo app/painel da InfinitePay.
+
+
+## Ajustes da versão 4
+
+- Ações da lista foram compactadas:
+  - botão principal: Dar baixa, Editar ou Verificar pagamento;
+  - demais opções ficam em `Mais ações`.
+- Tentativas aguardando pagamento podem ser consultadas pelo filtro.
+- Em tentativas aguardando pagamento, há botão `Verificar pagamento`.
+- Se o pagamento caiu na InfinitePay, mas webhook/retorno não atualizou, use `Mais ações > Confirmar pagamento manualmente` após conferir no app.
+
+
+## Ajustes da versão 5
+
+- Página de compra agora coleta e-mail obrigatório.
+- WhatsApp também ficou obrigatório.
+- Backend envia `customer` para a InfinitePay com:
+  - `name`
+  - `email`
+  - `phone_number`
+- Não enviamos `address`.
+- O checkout voltou a enviar 1 item com o valor total, modelo mais simples/estável.
+- Quantidade, desconto e total continuam salvos corretamente no Firebase.
+- E-mail agora aparece no controle e no relatório CSV.

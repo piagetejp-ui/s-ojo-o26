@@ -111,12 +111,17 @@ module.exports = async function handler(req, res) {
 
     const comprador = String(body.comprador || "").trim();
     const whatsapp = String(body.whatsapp || "").trim();
+    const email = String(body.email || "").trim().toLowerCase();
     const aluno = String(body.aluno || "").trim();
     const turma = String(body.turma || "").trim();
     const quantidade = Math.max(1, Math.floor(Number(body.quantidade) || 1));
 
-    if (!comprador || !aluno || !turma) {
-      return json(res, 400, { error: "Informe comprador, aluno e turma." });
+    if (!comprador || !whatsapp || !email || !aluno || !turma) {
+      return json(res, 400, { error: "Informe comprador, WhatsApp, e-mail, aluno e turma." });
+    }
+
+    if (!/^\S+@\S+\.\S+$/.test(email)) {
+      return json(res, 400, { error: "Informe um e-mail válido." });
     }
 
     const handle = process.env.INFINITEPAY_HANDLE || "piaget";
@@ -129,6 +134,7 @@ module.exports = async function handler(req, res) {
       idPedido: orderNsu,
       comprador,
       whatsapp,
+      email,
       aluno,
       turma,
       dataCompra: agora,
@@ -164,10 +170,27 @@ module.exports = async function handler(req, res) {
       order_nsu: orderNsu,
       redirect_url: `${baseUrl}/obrigado.html`,
       webhook_url: `${baseUrl}/api/webhook-infinitepay`,
-      items: buildItems(calc)
+      items: [
+        {
+          quantity: 1,
+          price: calc.totalCentavos,
+          description: `São João da Fé 2026 - ${calc.quantidade} ingresso(s)`
+        }
+      ]
+};
+
+    const phone = normalizePhone(whatsapp);
+
+    payloadInfinite.customer = {
+      name: comprador,
+      email
     };
 
-    // Não enviamos customer/address para o checkout para manter a tela da InfinitePay o mais simples possível.
+    if (phone) {
+      payloadInfinite.customer.phone_number = phone;
+    }
+
+    // Não enviamos address. O endereço, se aparecer, deve ser controlado nas configurações do checkout da InfinitePay.
 
     const response = await fetch("https://api.checkout.infinitepay.io/links", {
       method: "POST",
