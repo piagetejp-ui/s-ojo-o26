@@ -131,3 +131,24 @@ Restaurado no checkout:
 - O e-mail fica salvo no nosso sistema, mas não é enviado para a InfinitePay nesta versão.
 - Não enviamos endereço.
 - O `payloadResumoInfinitePay` é salvo no Firebase para auditoria.
+
+
+## Ajustes da versão 9 — teste com endereço no payload da InfinitePay
+
+Esta versão é um teste para tentar reproduzir o comportamento da primeira compra que funcionou.
+
+- Página de compra agora coleta endereço obrigatório:
+  - CEP
+  - Rua/Avenida
+  - Bairro
+  - Número
+  - Complemento opcional
+- O endereço é salvo no Firebase.
+- O endereço é enviado para a InfinitePay no objeto `address`.
+- O checkout continua no formato mais estável:
+  - 1 item único com valor total;
+  - descrição do item com produto + aluno + turma;
+  - customer com nome e telefone;
+  - redirect_url simples;
+  - webhook_url mantida.
+- O e-mail continua obrigatório no nosso formulário e salvo no Firebase, mas não é enviado para a InfinitePay nesta versão para manter o teste focado no endereço.

@@ -84,6 +84,11 @@ module.exports = async function handler(req, res) {
     const comprador = String(body.comprador || "").trim();
     const whatsapp = String(body.whatsapp || "").trim();
     const email = String(body.email || "").trim().toLowerCase();
+    const cep = String(body.cep || "").replace(/\D/g, "");
+    const rua = String(body.rua || "").trim();
+    const bairro = String(body.bairro || "").trim();
+    const numero = String(body.numero || "").trim();
+    const complemento = String(body.complemento || "").trim();
     const aluno = String(body.aluno || "").trim();
     const turma = String(body.turma || "").trim();
     const quantidade = Math.max(1, Math.floor(Number(body.quantidade) || 1));
@@ -94,6 +99,10 @@ module.exports = async function handler(req, res) {
 
     if (!/^\S+@\S+\.\S+$/.test(email)) {
       return json(res, 400, { error: "Informe um e-mail válido." });
+    }
+
+    if (!cep || cep.length !== 8 || !rua || !bairro || !numero) {
+      return json(res, 400, { error: "Informe endereço completo: CEP, rua, bairro e número." });
     }
 
     const handle = process.env.INFINITEPAY_HANDLE || "piaget";
@@ -107,6 +116,13 @@ module.exports = async function handler(req, res) {
       comprador,
       whatsapp,
       email,
+      endereco: {
+        cep,
+        street: rua,
+        neighborhood: bairro,
+        number: numero,
+        complement: complemento
+      },
       aluno,
       turma,
       dataCompra: agora,
@@ -173,7 +189,8 @@ module.exports = async function handler(req, res) {
         customer: {
           name: payloadInfinite.customer?.name || "",
           phone_number: payloadInfinite.customer?.phone_number || ""
-        }
+        },
+        address: payloadInfinite.address || null
       },
       atualizadoEm: new Date().toISOString()
     }, { merge: true });
