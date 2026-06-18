@@ -122,7 +122,7 @@
     .toolbar {
       padding:16px;
       display:grid;
-      grid-template-columns:1.4fr .65fr .65fr .65fr auto auto;
+      grid-template-columns:1.15fr .55fr .55fr .55fr auto auto auto;
       gap:10px;
       align-items:end;
     }
@@ -200,6 +200,12 @@
       background:#eff6ff;
       color:var(--azul);
       border:1px solid rgba(9,37,111,.12);
+    }
+
+    .btn-success {
+      background:#dcfce7;
+      color:var(--verde);
+      border:1px solid rgba(21,128,61,.20);
     }
 
     .menu-wrap {
@@ -312,7 +318,7 @@
       width:100%;
       border-collapse:separate;
       border-spacing:0 8px;
-      min-width:920px;
+      min-width:980px;
     }
 
     th {
@@ -374,6 +380,16 @@
     .badge.Problema {
       background:#fee2e2;
       color:#b91c1c;
+    }
+
+    .badge.Manual {
+      background:#e0f2fe;
+      color:#075985;
+    }
+
+    .badge.Online {
+      background:#ede9fe;
+      color:#5b21b6;
     }
 
     .row-actions {
@@ -461,7 +477,7 @@
       border:0;
       padding:0;
       border-radius:24px;
-      width:min(560px, calc(100% - 22px));
+      width:min(620px, calc(100% - 22px));
       box-shadow:var(--sombra);
     }
 
@@ -502,6 +518,12 @@
       gap:12px;
     }
 
+    .modal-grid {
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:12px;
+    }
+
     .readonly-box {
       background:#f8fafc;
       border:1px solid var(--borda);
@@ -509,6 +531,27 @@
       padding:12px 13px;
       color:var(--muted);
       font-weight:700;
+    }
+
+    .calc-box {
+      background:#f8fafc;
+      border:1px solid var(--borda);
+      border-radius:16px;
+      padding:14px;
+      display:grid;
+      gap:6px;
+    }
+
+    .calc-row {
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+      font-size:.92rem;
+      color:var(--muted);
+    }
+
+    .calc-row strong {
+      color:var(--texto);
     }
 
     .modal-actions {
@@ -584,7 +627,7 @@
       font-size:.9rem;
     }
 
-    @media (max-width:1050px) {
+    @media (max-width:1120px) {
       .toolbar {
         grid-template-columns:1fr 1fr;
       }
@@ -669,6 +712,10 @@
         padding:16px;
       }
 
+      .modal-grid {
+        grid-template-columns:1fr;
+      }
+
       .modal-actions {
         flex-direction:column;
       }
@@ -689,7 +736,7 @@
     <div class="login-card">
       <p class="brand-small" style="color:var(--laranja);">Escola Piaget</p>
       <h2>Controle São João</h2>
-      <p>Acesso interno para controle de entrega dos ingressos.</p>
+      <p>Acesso interno para controle de pagamento e entrega dos ingressos.</p>
       <form id="loginForm">
         <label>
           Senha de acesso
@@ -718,7 +765,7 @@
     <section class="card toolbar">
       <label>
         Pesquisar
-        <input id="searchInput" type="search" placeholder="Nome, ID do pedido, entregue para...">
+        <input id="searchInput" type="search" placeholder="Nome, aluno, turma, ID, entregue para...">
       </label>
       <label>
         Status
@@ -743,8 +790,10 @@
         <button class="btn btn-secondary" id="clearBtn">Limpar</button>
       </div>
 
+      <button class="btn btn-success" id="newSaleBtn" type="button">+ Registrar venda</button>
+
       <div class="menu-wrap">
-        <button class="btn btn-secondary" id="systemMenuBtn" type="button">Opções do sistema ▾</button>
+        <button class="btn btn-secondary" id="systemMenuBtn" type="button">Opções ▾</button>
         <div class="menu" id="systemMenu">
           <div class="menu-title">Relatórios</div>
           <button class="btn btn-secondary" id="csvBtn" type="button">Baixar relatório CSV</button>
@@ -769,7 +818,7 @@
       <div class="section-head">
         <div>
           <h2>Pedidos do São João</h2>
-          <p>Pesquise, confira e dê baixa na entrega dos ingressos.</p>
+          <p>Pedidos pendentes aparecem primeiro. Vendas manuais e online ficam na mesma lista.</p>
         </div>
       </div>
 
@@ -779,11 +828,12 @@
             <thead>
               <tr>
                 <th>Comprador</th>
+                <th>Aluno/Turma</th>
                 <th>ID</th>
                 <th>Data</th>
                 <th>Qtd.</th>
+                <th>Origem</th>
                 <th>Status entrega</th>
-                <th>Observação</th>
                 <th>Ações</th>
               </tr>
             </thead>
@@ -793,7 +843,7 @@
         <div class="cards-mobile" id="cardsMobile"></div>
         <div class="empty" id="emptyState">
           <h3>Nenhum pedido encontrado</h3>
-          <p>Limpe os filtros ou importe os pedidos.</p>
+          <p>Limpe os filtros, importe pedidos ou registre uma venda manual.</p>
         </div>
       </div>
     </section>
@@ -802,12 +852,12 @@
       <h3>Atualização por imagem</h3>
       <p>
         Envie o print novo da tela de pedidos para gerar o JSON de atualização. Depois use
-        <strong>Opções do sistema &gt; Importar pedidos JSON/CSV</strong>. O sistema usa o <strong>ID do pedido</strong>, não duplica e mantém as entregas já marcadas.
+        <strong>Opções &gt; Importar pedidos JSON/CSV</strong>. O sistema usa o <strong>ID do pedido</strong>, não duplica e mantém as entregas já marcadas.
       </p>
     </section>
   </main>
 
-  <dialog id="dialog">
+  <dialog id="deliveryDialog">
     <form class="modal" method="dialog">
       <div class="modal-head">
         <div>
@@ -857,7 +907,138 @@
       </div>
       <div class="modal-actions">
         <button class="btn btn-secondary" value="cancel">Cancelar</button>
-        <button class="btn btn-primary" id="saveBtn">Salvar baixa</button>
+        <button class="btn btn-primary" id="saveDeliveryBtn">Salvar baixa</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="saleDialog">
+    <form class="modal" method="dialog">
+      <div class="modal-head">
+        <div>
+          <p class="brand-small" style="color:var(--laranja); margin-bottom:5px;">Venda manual</p>
+          <h2>Registrar venda</h2>
+        </div>
+        <button class="x" value="cancel">×</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="modal-grid">
+          <label>
+            Comprador/responsável
+            <input id="saleComprador" type="text" placeholder="Nome do comprador">
+          </label>
+
+          <label>
+            Aluno
+            <input id="saleAluno" type="text" placeholder="Nome do aluno">
+          </label>
+        </div>
+
+        <div class="modal-grid">
+          <label>
+            Turma
+            <select id="saleTurma">
+              <option value="">Selecione</option>
+              <option value="Infantil Nível 3">Infantil Nível 3</option>
+              <option value="Infantil Nível 4">Infantil Nível 4</option>
+              <option value="Infantil Nível 5">Infantil Nível 5</option>
+              <option value="1º ano do Ensino Fundamental">1º ano do Ensino Fundamental</option>
+              <option value="2º ano do Ensino Fundamental">2º ano do Ensino Fundamental</option>
+              <option value="3º ano do Ensino Fundamental">3º ano do Ensino Fundamental</option>
+              <option value="4º ano do Ensino Fundamental">4º ano do Ensino Fundamental</option>
+              <option value="5º ano do Ensino Fundamental">5º ano do Ensino Fundamental</option>
+              <option value="6º ano do Ensino Fundamental">6º ano do Ensino Fundamental</option>
+              <option value="7º ano do Ensino Fundamental">7º ano do Ensino Fundamental</option>
+              <option value="8º ano do Ensino Fundamental">8º ano do Ensino Fundamental</option>
+              <option value="9º ano do Ensino Fundamental">9º ano do Ensino Fundamental</option>
+            </select>
+          </label>
+
+          <label>
+            Quantidade de ingressos
+            <input id="saleQuantidade" type="number" min="1" step="1" value="1">
+          </label>
+        </div>
+
+        <div class="modal-grid">
+          <label>
+            Valor unitário
+            <input id="saleValorUnitario" type="number" min="0" step="0.01" value="35">
+          </label>
+
+          <label>
+            Desconto adicional
+            <input id="saleDescontoExtra" type="number" min="0" step="0.01" value="0">
+          </label>
+        </div>
+
+        <div class="calc-box">
+          <div class="calc-row"><span>Subtotal</span><strong id="calcSubtotal">R$ 0,00</strong></div>
+          <div class="calc-row"><span>Desconto automático</span><strong id="calcDescontoAuto">R$ 0,00</strong></div>
+          <div class="calc-row"><span>Desconto adicional</span><strong id="calcDescontoExtra">R$ 0,00</strong></div>
+          <div class="calc-row"><span>Total sugerido</span><strong id="calcTotal">R$ 0,00</strong></div>
+          <div class="mini">Regra: a partir do 5º ingresso, desconto de R$ 5,00 em cada ingresso extra.</div>
+        </div>
+
+        <div class="modal-grid">
+          <label>
+            Forma de recebimento
+            <select id="saleFormaRecebimento">
+              <option value="Pix">Pix</option>
+              <option value="Dinheiro">Dinheiro</option>
+              <option value="InfinitePay">InfinitePay</option>
+              <option value="Laranjinha">Laranjinha</option>
+              <option value="Link de pagamento">Link de pagamento</option>
+              <option value="Outro">Outro</option>
+            </select>
+          </label>
+
+          <label>
+            Status do pagamento
+            <select id="saleStatusPagamento">
+              <option value="Pago">Pago</option>
+              <option value="Pendente">Pendente</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="modal-grid">
+          <label>
+            Já entregou?
+            <select id="saleJaEntregou">
+              <option value="Nao">Não, deixar pendente</option>
+              <option value="Sim">Sim, registrar entrega agora</option>
+            </select>
+          </label>
+
+          <label>
+            Entregue por
+            <select id="saleEntreguePor">
+              <option value="">Selecione</option>
+              <option value="Francisca">Francisca</option>
+              <option value="Evanda">Evanda</option>
+              <option value="Luana">Luana</option>
+              <option value="Daniele">Daniele</option>
+              <option value="Lucas">Lucas</option>
+            </select>
+          </label>
+        </div>
+
+        <label>
+          Entregue para
+          <input id="saleEntreguePara" type="text" placeholder="Nome de quem recebeu, se já foi entregue">
+        </label>
+
+        <label>
+          Observação
+          <textarea id="saleObservacao" rows="3" placeholder="Observação da venda ou entrega"></textarea>
+        </label>
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn btn-secondary" value="cancel">Cancelar</button>
+        <button class="btn btn-primary" id="saveSaleBtn">Salvar venda</button>
       </div>
     </form>
   </dialog>
@@ -867,6 +1048,10 @@
   <script>
     const APP_PASSWORD = "piaget2026";
     const AUTH_KEY = "sao_joao_fe_2026_auth";
+
+    const PRECO_PADRAO = 35;
+    const DESCONTO_APOS_QTD = 4;
+    const DESCONTO_EXTRA_POR_INGRESSO = 5;
 
     const firebaseConfig = {
       apiKey: "AIzaSyBf5mrpUFipHdOnVCw3k4nL9LOBEtQlHp8",
@@ -883,6 +1068,7 @@
     let orders = [];
     let currentEditId = null;
     let currentModalMode = "edit";
+    let editSnapshotAtualizadoEm = "";
     let unsub = null;
 
     let appliedFilters = {
@@ -906,6 +1092,7 @@
       end: $("endDate"),
       applyFilter: $("applyFilterBtn"),
       clear: $("clearBtn"),
+      newSale: $("newSaleBtn"),
       systemMenuBtn: $("systemMenuBtn"),
       systemMenu: $("systemMenu"),
       csv: $("csvBtn"),
@@ -914,7 +1101,7 @@
       table: $("tableBody"),
       cards: $("cardsMobile"),
       empty: $("emptyState"),
-      dialog: $("dialog"),
+      deliveryDialog: $("deliveryDialog"),
       modalEyebrow: $("modalEyebrow"),
       modalTitle: $("modalTitle"),
       modalId: $("modalId"),
@@ -924,7 +1111,25 @@
       modalPor: $("modalPor"),
       modalDataInfo: $("modalDataInfo"),
       modalObs: $("modalObs"),
-      save: $("saveBtn"),
+      saveDelivery: $("saveDeliveryBtn"),
+      saleDialog: $("saleDialog"),
+      saleComprador: $("saleComprador"),
+      saleAluno: $("saleAluno"),
+      saleTurma: $("saleTurma"),
+      saleQuantidade: $("saleQuantidade"),
+      saleValorUnitario: $("saleValorUnitario"),
+      saleDescontoExtra: $("saleDescontoExtra"),
+      calcSubtotal: $("calcSubtotal"),
+      calcDescontoAuto: $("calcDescontoAuto"),
+      calcDescontoExtra: $("calcDescontoExtra"),
+      calcTotal: $("calcTotal"),
+      saleFormaRecebimento: $("saleFormaRecebimento"),
+      saleStatusPagamento: $("saleStatusPagamento"),
+      saleJaEntregou: $("saleJaEntregou"),
+      saleEntreguePor: $("saleEntreguePor"),
+      saleEntreguePara: $("saleEntreguePara"),
+      saleObservacao: $("saleObservacao"),
+      saveSale: $("saveSaleBtn"),
       toast: $("toast")
     };
 
@@ -982,6 +1187,7 @@
     function bind() {
       el.applyFilter.addEventListener("click", applyFilters);
       el.clear.addEventListener("click", clearFilters);
+      el.newSale.addEventListener("click", openSaleModal);
 
       el.search.addEventListener("keydown", (event) => {
         if (event.key === "Enter") applyFilters();
@@ -1008,7 +1214,19 @@
       });
 
       el.importInput.addEventListener("change", importFile);
-      el.save.addEventListener("click", saveModal);
+      el.saveDelivery.addEventListener("click", saveDeliveryModal);
+      el.saveSale.addEventListener("click", saveSaleModal);
+
+      [
+        el.saleQuantidade,
+        el.saleValorUnitario,
+        el.saleDescontoExtra
+      ].forEach(input => {
+        input.addEventListener("input", updateSaleCalc);
+        input.addEventListener("change", updateSaleCalc);
+      });
+
+      el.saleJaEntregou.addEventListener("change", handleSaleDeliveryState);
     }
 
     function listenOrders() {
@@ -1070,8 +1288,12 @@
       return orders.filter(o => {
         const hay = norm([
           o.comprador,
+          o.aluno,
+          o.turma,
           o.idPedido,
           o.produto,
+          o.formaRecebimento,
+          o.origem,
           o.observacao,
           o.entreguePara,
           o.entreguePor
@@ -1080,13 +1302,22 @@
         if (term && !hay.includes(term)) return false;
         if (status !== "todos" && o.statusEntrega !== status) return false;
 
-        const d = (o.dataCompra || "").slice(0,10);
+        const d = (o.dataCompra || o.criadoEm || "").slice(0,10);
 
         if (start && d < start) return false;
         if (end && d > end) return false;
 
         return true;
-      }).sort((a,b) => String(b.dataCompra).localeCompare(String(a.dataCompra)));
+      }).sort(sortOrders);
+    }
+
+    function sortOrders(a, b) {
+      const statusA = a.statusEntrega === "Entregue" ? 1 : 0;
+      const statusB = b.statusEntrega === "Entregue" ? 1 : 0;
+
+      if (statusA !== statusB) return statusA - statusB;
+
+      return String(b.dataCompra || b.criadoEm || "").localeCompare(String(a.dataCompra || a.criadoEm || ""));
     }
 
     function renderStats(list) {
@@ -1106,64 +1337,92 @@
     }
 
     function renderTable(list) {
-      el.table.innerHTML = list.map(o => `
-        <tr>
-          <td>
-            <div class="buyer">${esc(o.comprador || "Comprador não informado")}</div>
-            <div class="mini">${esc(o.produto || "São João da Fé 2026")}</div>
-          </td>
-          <td><strong>#${esc(o.idPedido)}</strong></td>
-          <td>
-            <div>${date(o.dataCompra)}</div>
-            <div class="mini">${esc(o.statusPagamento || "Aprovado")}</div>
-          </td>
-          <td><strong>${num(o.quantidade)}</strong></td>
-          <td>
-            <span class="badge ${esc(o.statusEntrega || "Pendente")}">${esc(o.statusEntrega || "Pendente")}</span>
-            ${o.dataEntrega ? `<div class="mini">${date(o.dataEntrega)}</div>` : ""}
-            ${o.entreguePara ? `<div class="mini">Para: ${esc(o.entreguePara)}</div>` : ""}
-            ${o.entreguePor ? `<div class="mini">Por: ${esc(o.entreguePor)}</div>` : ""}
-          </td>
-          <td class="mini">${esc(o.observacao || "—")}</td>
-          <td>
-            <div class="row-actions">
-              <button class="btn btn-primary" onclick="openDeliver('${escJs(o.idPedido)}')">Dar baixa</button>
-              <button class="btn btn-secondary" onclick="openEdit('${escJs(o.idPedido)}')">Editar</button>
-            </div>
-          </td>
-        </tr>
-      `).join("");
+      el.table.innerHTML = list.map(o => {
+        const origemLabel = getOrigemLabel(o);
+        const showDeliverButton = (o.statusEntrega || "Pendente") !== "Entregue";
+
+        return `
+          <tr>
+            <td>
+              <div class="buyer">${esc(o.comprador || "Comprador não informado")}</div>
+              <div class="mini">${esc(o.produto || "São João da Fé 2026")}</div>
+            </td>
+            <td>
+              <div>${esc(o.aluno || "—")}</div>
+              <div class="mini">${esc(o.turma || "Turma não informada")}</div>
+            </td>
+            <td><strong>#${esc(o.idPedido)}</strong></td>
+            <td>
+              <div>${date(o.dataCompra || o.criadoEm)}</div>
+              <div class="mini">${esc(o.statusPagamento || "Aprovado")}</div>
+            </td>
+            <td><strong>${num(o.quantidade)}</strong></td>
+            <td>
+              <span class="badge ${origemLabel.classe}">${origemLabel.texto}</span>
+              ${o.formaRecebimento ? `<div class="mini">${esc(o.formaRecebimento)}</div>` : ""}
+            </td>
+            <td>
+              <span class="badge ${esc(o.statusEntrega || "Pendente")}">${esc(o.statusEntrega || "Pendente")}</span>
+              ${o.dataEntrega ? `<div class="mini">${date(o.dataEntrega)}</div>` : ""}
+              ${o.entreguePara ? `<div class="mini">Para: ${esc(o.entreguePara)}</div>` : ""}
+              ${o.entreguePor ? `<div class="mini">Por: ${esc(o.entreguePor)}</div>` : ""}
+            </td>
+            <td>
+              <div class="row-actions">
+                ${showDeliverButton ? `<button class="btn btn-primary" onclick="openDeliver('${escJs(o.idPedido)}')">Dar baixa</button>` : ""}
+                <button class="btn btn-secondary" onclick="openEdit('${escJs(o.idPedido)}')">Editar</button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join("");
     }
 
     function renderCards(list) {
-      el.cards.innerHTML = list.map(o => `
-        <article class="order-card">
-          <div class="order-top">
-            <div>
-              <div class="buyer">${esc(o.comprador || "Comprador não informado")}</div>
-              <div class="mini">Pedido #${esc(o.idPedido)} · ${date(o.dataCompra)}</div>
+      el.cards.innerHTML = list.map(o => {
+        const origemLabel = getOrigemLabel(o);
+        const showDeliverButton = (o.statusEntrega || "Pendente") !== "Entregue";
+
+        return `
+          <article class="order-card">
+            <div class="order-top">
+              <div>
+                <div class="buyer">${esc(o.comprador || "Comprador não informado")}</div>
+                <div class="mini">Pedido #${esc(o.idPedido)} · ${date(o.dataCompra || o.criadoEm)}</div>
+              </div>
+              <span class="badge ${esc(o.statusEntrega || "Pendente")}">${esc(o.statusEntrega || "Pendente")}</span>
             </div>
-            <span class="badge ${esc(o.statusEntrega || "Pendente")}">${esc(o.statusEntrega || "Pendente")}</span>
-          </div>
 
-          <div class="order-grid">
-            <div><span>Qtd.</span><strong>${num(o.quantidade)}</strong></div>
-            <div><span>Produto</span><strong>${esc(o.produto || "São João da Fé 2026")}</strong></div>
-            <div><span>Pagamento</span><strong>${esc(o.statusPagamento || "Aprovado")}</strong></div>
-            <div><span>Entrega</span><strong>${esc(o.statusEntrega || "Pendente")}</strong></div>
-          </div>
+            <div class="order-grid">
+              <div><span>Qtd.</span><strong>${num(o.quantidade)}</strong></div>
+              <div><span>Origem</span><strong>${esc(origemLabel.texto)}</strong></div>
+              <div><span>Aluno</span><strong>${esc(o.aluno || "—")}</strong></div>
+              <div><span>Turma</span><strong>${esc(o.turma || "—")}</strong></div>
+            </div>
 
-          ${o.dataEntrega ? `<p class="mini">Data: ${date(o.dataEntrega)}</p>` : ""}
-          ${o.entreguePara ? `<p class="mini">Entregue para: ${esc(o.entreguePara)}</p>` : ""}
-          ${o.entreguePor ? `<p class="mini">Entregue por: ${esc(o.entreguePor)}</p>` : ""}
-          ${o.observacao ? `<p class="mini">Obs.: ${esc(o.observacao)}</p>` : ""}
+            ${o.formaRecebimento ? `<p class="mini">Recebimento: ${esc(o.formaRecebimento)}</p>` : ""}
+            ${o.dataEntrega ? `<p class="mini">Data: ${date(o.dataEntrega)}</p>` : ""}
+            ${o.entreguePara ? `<p class="mini">Entregue para: ${esc(o.entreguePara)}</p>` : ""}
+            ${o.entreguePor ? `<p class="mini">Entregue por: ${esc(o.entreguePor)}</p>` : ""}
+            ${o.observacao ? `<p class="mini">Obs.: ${esc(o.observacao)}</p>` : ""}
 
-          <div class="row-actions">
-            <button class="btn btn-primary" onclick="openDeliver('${escJs(o.idPedido)}')">Dar baixa</button>
-            <button class="btn btn-secondary" onclick="openEdit('${escJs(o.idPedido)}')">Editar</button>
-          </div>
-        </article>
-      `).join("");
+            <div class="row-actions">
+              ${showDeliverButton ? `<button class="btn btn-primary" onclick="openDeliver('${escJs(o.idPedido)}')">Dar baixa</button>` : ""}
+              <button class="btn btn-secondary" onclick="openEdit('${escJs(o.idPedido)}')">Editar</button>
+            </div>
+          </article>
+        `;
+      }).join("");
+    }
+
+    function getOrigemLabel(o) {
+      const origem = String(o.origem || "").toLowerCase();
+
+      if (origem.includes("manual") || String(o.idPedido || "").startsWith("MANUAL")) {
+        return { texto: "Manual", classe: "Manual" };
+      }
+
+      return { texto: "Online", classe: "Online" };
     }
 
     function openDeliver(id) {
@@ -1172,6 +1431,7 @@
 
       currentEditId = id;
       currentModalMode = "deliver";
+      editSnapshotAtualizadoEm = o.atualizadoEm || "";
 
       el.modalEyebrow.textContent = "Baixa de entrega";
       el.modalTitle.textContent = `${o.comprador || "Pedido"} · #${o.idPedido}`;
@@ -1182,9 +1442,9 @@
       el.modalPor.value = o.entreguePor || "";
       el.modalDataInfo.textContent = "Será registrada automaticamente ao salvar.";
       el.modalObs.value = o.observacao || "";
-      el.save.textContent = "Confirmar entrega";
+      el.saveDelivery.textContent = "Confirmar entrega";
 
-      el.dialog.showModal();
+      el.deliveryDialog.showModal();
       setTimeout(() => el.modalPara.focus(), 80);
     }
 
@@ -1194,6 +1454,7 @@
 
       currentEditId = id;
       currentModalMode = "edit";
+      editSnapshotAtualizadoEm = o.atualizadoEm || "";
 
       el.modalEyebrow.textContent = "Editar pedido";
       el.modalTitle.textContent = `${o.comprador || "Pedido"} · #${o.idPedido}`;
@@ -1204,18 +1465,21 @@
       el.modalPor.value = o.entreguePor || "";
       el.modalDataInfo.textContent = o.dataEntrega ? date(o.dataEntrega) : "Sem entrega registrada.";
       el.modalObs.value = o.observacao || "";
-      el.save.textContent = "Salvar alterações";
+      el.saveDelivery.textContent = "Salvar alterações";
 
-      el.dialog.showModal();
+      el.deliveryDialog.showModal();
     }
 
-    async function saveModal(e) {
+    async function saveDeliveryModal(e) {
       e.preventDefault();
 
       if (!db || !currentEditId) return;
 
+      const current = orders.find(x => x.idPedido === currentEditId);
       const entreguePara = el.modalPara.value.trim();
       const entreguePor = el.modalPor.value.trim();
+      const newStatus = currentModalMode === "deliver" ? "Entregue" : el.modalStatus.value;
+      const oldStatus = current?.statusEntrega || "Pendente";
 
       if (currentModalMode === "deliver") {
         if (!entreguePara) {
@@ -1231,31 +1495,221 @@
         }
       }
 
-      const agora = new Date().toISOString();
+      if (oldStatus === "Entregue" && newStatus !== "Entregue") {
+        const ok = confirm("Você está revogando uma baixa já registrada. Deseja limpar os dados de entrega?");
+        if (!ok) return;
+      }
 
+      const okConflict = await checkConflict(currentEditId, editSnapshotAtualizadoEm);
+      if (!okConflict) return;
+
+      const agora = new Date().toISOString();
       const payload = {
-        statusEntrega: currentModalMode === "deliver" ? "Entregue" : el.modalStatus.value,
+        statusEntrega: newStatus,
         entreguePara,
         entreguePor,
         observacao: el.modalObs.value.trim(),
         atualizadoEm: agora
       };
 
-      if (currentModalMode === "deliver" || payload.statusEntrega === "Entregue") {
+      if (newStatus === "Entregue") {
         payload.dataEntrega = agora;
+      } else {
+        payload.dataEntrega = "";
+        payload.entreguePara = "";
+        payload.entreguePor = "";
       }
 
-      if (payload.statusEntrega !== "Entregue") {
-        payload.dataEntrega = "";
-      }
+      payload.historico = firebase.firestore.FieldValue.arrayUnion({
+        tipo: oldStatus === "Entregue" && newStatus !== "Entregue" ? "revogacao_baixa" : "atualizacao_entrega",
+        statusAnterior: oldStatus,
+        statusNovo: newStatus,
+        data: agora,
+        entreguePara: payload.entreguePara || "",
+        entreguePor: payload.entreguePor || "",
+        observacao: payload.observacao || ""
+      });
 
       try {
         await db.collection(COLLECTION).doc(currentEditId).set(payload, { merge: true });
-        el.dialog.close();
-        toast(currentModalMode === "deliver" ? "Entrega registrada com data e hora." : "Pedido atualizado.");
+        el.deliveryDialog.close();
+        toast(newStatus === "Entregue" ? "Entrega registrada com data e hora." : "Pedido atualizado.");
       } catch (error) {
         console.error(error);
         alert("Erro ao salvar. Confira conexão e regras do Firestore.");
+      }
+    }
+
+    function openSaleModal() {
+      el.saleComprador.value = "";
+      el.saleAluno.value = "";
+      el.saleTurma.value = "";
+      el.saleQuantidade.value = "1";
+      el.saleValorUnitario.value = String(PRECO_PADRAO);
+      el.saleDescontoExtra.value = "0";
+      el.saleFormaRecebimento.value = "Pix";
+      el.saleStatusPagamento.value = "Pago";
+      el.saleJaEntregou.value = "Nao";
+      el.saleEntreguePor.value = "";
+      el.saleEntreguePara.value = "";
+      el.saleObservacao.value = "";
+
+      handleSaleDeliveryState();
+      updateSaleCalc();
+
+      el.saleDialog.showModal();
+      setTimeout(() => el.saleComprador.focus(), 80);
+    }
+
+    function handleSaleDeliveryState() {
+      const entregue = el.saleJaEntregou.value === "Sim";
+
+      el.saleEntreguePor.disabled = !entregue;
+      el.saleEntreguePara.disabled = !entregue;
+
+      if (!entregue) {
+        el.saleEntreguePor.value = "";
+        el.saleEntreguePara.value = "";
+      }
+    }
+
+    function calculateSale() {
+      const qtd = Math.max(1, Math.floor(num(el.saleQuantidade.value) || 1));
+      const unit = Math.max(0, num(el.saleValorUnitario.value));
+      const descontoExtra = Math.max(0, num(el.saleDescontoExtra.value));
+      const subtotal = qtd * unit;
+      const qtdComDesconto = Math.max(0, qtd - DESCONTO_APOS_QTD);
+      const descontoAuto = qtdComDesconto * DESCONTO_EXTRA_POR_INGRESSO;
+      const total = Math.max(0, subtotal - descontoAuto - descontoExtra);
+
+      return { qtd, unit, subtotal, descontoAuto, descontoExtra, total };
+    }
+
+    function updateSaleCalc() {
+      const calc = calculateSale();
+
+      el.calcSubtotal.textContent = money(calc.subtotal);
+      el.calcDescontoAuto.textContent = money(calc.descontoAuto);
+      el.calcDescontoExtra.textContent = money(calc.descontoExtra);
+      el.calcTotal.textContent = money(calc.total);
+    }
+
+    async function saveSaleModal(e) {
+      e.preventDefault();
+
+      if (!db) return;
+
+      const comprador = el.saleComprador.value.trim();
+      const aluno = el.saleAluno.value.trim();
+      const turma = el.saleTurma.value;
+      const jaEntregou = el.saleJaEntregou.value === "Sim";
+      const entreguePara = el.saleEntreguePara.value.trim();
+      const entreguePor = el.saleEntreguePor.value;
+      const calc = calculateSale();
+
+      if (!comprador) {
+        alert("Informe o nome do comprador/responsável.");
+        el.saleComprador.focus();
+        return;
+      }
+
+      if (!aluno) {
+        alert("Informe o nome do aluno.");
+        el.saleAluno.focus();
+        return;
+      }
+
+      if (!turma) {
+        alert("Selecione a turma.");
+        el.saleTurma.focus();
+        return;
+      }
+
+      if (jaEntregou && !entreguePara) {
+        alert("Informe para quem foi entregue.");
+        el.saleEntreguePara.focus();
+        return;
+      }
+
+      if (jaEntregou && !entreguePor) {
+        alert("Selecione quem entregou.");
+        el.saleEntreguePor.focus();
+        return;
+      }
+
+      const agora = new Date();
+      const idPedido = makeManualId(agora);
+      const iso = agora.toISOString();
+
+      const payload = {
+        idPedido,
+        comprador,
+        aluno,
+        turma,
+        dataCompra: iso,
+        produto: "São João da Fé 2026",
+        quantidade: calc.qtd,
+        valorUnitario: calc.unit,
+        subtotal: calc.subtotal,
+        descontoAutomatico: calc.descontoAuto,
+        descontoAdicional: calc.descontoExtra,
+        total: calc.total,
+        formaRecebimento: el.saleFormaRecebimento.value,
+        statusPagamento: el.saleStatusPagamento.value,
+        statusEntrega: jaEntregou ? "Entregue" : "Pendente",
+        entreguePara: jaEntregou ? entreguePara : "",
+        entreguePor: jaEntregou ? entreguePor : "",
+        dataEntrega: jaEntregou ? iso : "",
+        observacao: el.saleObservacao.value.trim(),
+        origem: "Registro Manual",
+        criadoEm: iso,
+        atualizadoEm: iso,
+        historico: [{
+          tipo: "registro_manual",
+          data: iso,
+          statusEntrega: jaEntregou ? "Entregue" : "Pendente",
+          formaRecebimento: el.saleFormaRecebimento.value,
+          total: calc.total
+        }]
+      };
+
+      try {
+        await db.collection(COLLECTION).doc(idPedido).set(payload);
+        el.saleDialog.close();
+        toast("Venda manual registrada.");
+      } catch (error) {
+        console.error(error);
+        alert("Erro ao registrar venda. Confira conexão e regras do Firestore.");
+      }
+    }
+
+    function makeManualId(dateObj) {
+      const p = (n) => String(n).padStart(2, "0");
+      const y = dateObj.getFullYear();
+      const m = p(dateObj.getMonth() + 1);
+      const d = p(dateObj.getDate());
+      const h = p(dateObj.getHours());
+      const min = p(dateObj.getMinutes());
+      const s = p(dateObj.getSeconds());
+      const random = Math.floor(Math.random() * 900 + 100);
+
+      return `MANUAL-${y}${m}${d}-${h}${min}${s}-${random}`;
+    }
+
+    async function checkConflict(id, snapshotUpdatedAt) {
+      if (!id || !db) return true;
+
+      try {
+        const snap = await db.collection(COLLECTION).doc(id).get();
+        const latest = snap.exists ? (snap.data().atualizadoEm || "") : "";
+
+        if (snapshotUpdatedAt && latest && latest !== snapshotUpdatedAt) {
+          return confirm("Esse pedido foi atualizado por outra pessoa enquanto estava aberto. Deseja salvar mesmo assim?");
+        }
+
+        return true;
+      } catch {
+        return true;
       }
     }
 
@@ -1296,13 +1750,16 @@
 
           batch.set(ref, {
             comprador: n.comprador || existing.comprador || "",
+            aluno: n.aluno || existing.aluno || "",
+            turma: n.turma || existing.turma || "",
             dataCompra: n.dataCompra || existing.dataCompra || "",
             produto: n.produto || existing.produto || "São João da Fé 2026",
             quantidade: n.quantidade || existing.quantidade || 1,
             total: n.total || existing.total || 0,
             statusPagamento: n.statusPagamento || existing.statusPagamento || "Aprovado",
+            formaRecebimento: n.formaRecebimento || existing.formaRecebimento || "Link de pagamento",
             idInfinitePay: n.idInfinitePay || existing.idInfinitePay || "",
-            origem: n.origem || existing.origem || "Importação",
+            origem: n.origem || existing.origem || "Loja Online",
             atualizadoEm: new Date().toISOString()
           }, { merge: true });
 
@@ -1328,6 +1785,8 @@
       return (Array.isArray(list) ? list : []).map(o => ({
         idPedido: String(o.idPedido || o.id || "").trim(),
         comprador: String(o.comprador || "").trim(),
+        aluno: String(o.aluno || "").trim(),
+        turma: String(o.turma || "").trim(),
         dataCompra: normalizeDate(o.dataCompra || o.data || o.dataHora || ""),
         produto: String(o.produto || "São João da Fé 2026").trim(),
         quantidade: num(o.quantidade || o.qtd || 1),
@@ -1339,7 +1798,8 @@
         dataEntrega: normalizeDate(o.dataEntrega || ""),
         observacao: String(o.observacao || "").trim(),
         idInfinitePay: String(o.idInfinitePay || o.identificador || "").trim(),
-        origem: String(o.origem || "Importação").trim()
+        formaRecebimento: String(o.formaRecebimento || "Link de pagamento").trim(),
+        origem: String(o.origem || "Loja Online").trim()
       })).filter(o => o.idPedido);
     }
 
@@ -1352,15 +1812,24 @@
       const head = [
         "idPedido",
         "comprador",
+        "aluno",
+        "turma",
         "dataCompra",
         "produto",
         "quantidade",
+        "origem",
+        "formaRecebimento",
         "statusPagamento",
         "statusEntrega",
         "entreguePara",
         "entreguePor",
         "dataEntrega",
         "observacao",
+        "valorUnitario",
+        "subtotal",
+        "descontoAutomatico",
+        "descontoAdicional",
+        "total",
         "idInfinitePay"
       ];
 
@@ -1454,6 +1923,13 @@
 
     function num(v) {
       return Number(String(v ?? 0).replace(",", ".")) || 0;
+    }
+
+    function money(v) {
+      return num(v).toLocaleString("pt-BR", {
+        style:"currency",
+        currency:"BRL"
+      });
     }
 
     function date(v) {
