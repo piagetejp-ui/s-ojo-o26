@@ -81,71 +81,39 @@ module.exports = async function handler(req, res) {
     const db = initFirebase();
     const body = typeof req.body === "object" ? req.body : JSON.parse(req.body || "{}");
 
-    const handle = process.env.INFINITEPAY_HANDLE || "piaget";
-    const orderNsu = String(body.order_nsu || "").trim();
-    const transactionNsu = String(body.transaction_nsu || "").trim();
-    const slug = String(body.slug || "").trim();
+    const orderNsu = String(body.order_nsu || body.orderNsu || "").trim();
 
     if (!orderNsu) {
       return json(res, 400, { error: "order_nsu ausente." });
     }
 
-    const payload = {
-      handle,
-      order_nsu: orderNsu
-    };
-
-    if (transactionNsu) payload.transaction_nsu = transactionNsu;
-    if (slug) payload.slug = slug;
-
-    const response = await fetch("https://api.checkout.infinitepay.io/payment_check", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
-    });
-
-    const text = await response.text();
-    let data = {};
-    try { data = JSON.parse(text); } catch { data = { raw: text }; }
-
-    const paid = Boolean(data.paid || data.success === true || String(data.status || "").toLowerCase() === "paid");
     const agora = new Date().toISOString();
 
-    if (paid) {
-      await db.collection(COLLECTION).doc(orderNsu).set({
-        statusPagamento: "Pago",
-        statusEntrega: "Pendente",
-        pagamentoConfirmadoEm: agora,
-        transactionNsu: transactionNsu || data.transaction_nsu || "",
-        invoiceSlug: slug || data.slug || "",
-        captureMethod: data.capture_method || "",
-        amountCentavos: data.amount || null,
-        paidAmountCentavos: data.paid_amount || null,
-        paymentCheckPayload: data,
-        atualizadoEm: agora,
-        historico: admin.firestore.FieldValue.arrayUnion({
-          tipo: "pagamento_confirmado_payment_check",
-          data: agora,
-          transactionNsu: transactionNsu || data.transaction_nsu || "",
-          captureMethod: data.capture_method || "",
-          paidAmountCentavos: data.paid_amount || null
-        })
-      }, { merge: true });
-    } else {
-      await db.collection(COLLECTION).doc(orderNsu).set({
-        ultimoPaymentCheckEm: agora,
-        paymentCheckPayload: data,
-        atualizadoEm: agora
-      }, { merge: true });
-    }
+    await db.collection(COLLECTION).doc(orderNsu).set({
+      statusPagamento: "Pago",
+      statusEntrega: "Pendente",
+      pagamentoConfirmadoEm: agora,
+      transactionNsu: body.transaction_nsu || "",
+      invoiceSlug: body.invoice_slug || body.slug || "",
+      captureMethod: body.capture_method || "",
+      amountCentavos: body.amount || null,
+      paidAmountCentavos: body.paid_amount || null,
+      receiptUrl: body.receipt_url || "",
+      webhookRecebidoEm: agora,
+      webhookPayload: body,
+      atualizadoEm: agora,
+      historico: admin.firestore.FieldValue.arrayUnion({
+        tipo: "pagamento_confirmado_webhook",
+        data: agora,
+        transactionNsu: body.transaction_nsu || "",
+        captureMethod: body.capture_method || "",
+        paidAmountCentavos: body.paid_amount || null
+      })
+    }, { merge: true });
 
-    return json(res, 200, {
-      ok: true,
-      paid,
-      infinitepay: data
-    });
+    return json(res, 200, { ok: true });
   } catch (error) {
     console.error(error);
-    return json(res, 500, { error: error.message || "Erro ao verificar pagamento." });
+    return json(res, 400, { error: error.message || "Erro ao processar webhook." });
   }
 };
