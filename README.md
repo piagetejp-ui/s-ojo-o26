@@ -96,59 +96,60 @@ A `FIREBASE_PRIVATE_KEY` deve ser copiada do JSON da Service Account. Se o Verce
 - Isso melhora a chance de confirmação quando a InfinitePay demora para retornar ou quando volta sem todos os parâmetros.
 
 
-## Ajustes da versão 7
+## Ajustes da versão 10 — mínimo sem endereço
 
-- Checkout voltou a amarrar a descrição completa do produto no payload:
-  - São João da Fé 2026
-  - quantidade de ingressos
-  - nome do aluno
-  - turma
-- Mantém `customer` com nome, e-mail e telefone para pré-preenchimento.
-- Não envia endereço.
-- Mantém item único com valor total, modelo mais simples que funcionou melhor no primeiro teste.
-- Salva `payloadResumoInfinitePay` no Firestore para auditoria do que foi enviado para a InfinitePay.
-- Mantém reforço de confirmação da V6.
+Depois do teste com endereço, a hipótese foi descartada: pedir endereço só piora a experiência e a InfinitePay ainda pede novamente no checkout.
 
+Esta versão volta para um fluxo mínimo:
 
-## Ajustes da versão 8 — rollback do checkout para a primeira versão que funcionou
+- Formulário da escola pede apenas:
+  - nome do comprador;
+  - WhatsApp;
+  - e-mail;
+  - aluno;
+  - turma;
+  - quantidade.
+- Não pede endereço no formulário da escola.
+- Não envia `address` para a InfinitePay.
+- Envia `customer` com:
+  - nome;
+  - e-mail;
+  - telefone.
+- Mantém descrição completa do item:
+  - São João da Fé 2026;
+  - quantidade;
+  - aluno;
+  - turma.
+- Mantém item único com valor total.
+- Mantém confirmação reforçada da página de obrigado.
+- Mantém filtro de tentativas e confirmação manual no painel da secretaria.
 
-Esta versão mantém as melhorias do painel, mas restaura o payload enviado para a InfinitePay ao modelo da primeira versão que confirmou o Pix corretamente.
-
-Mantido no painel:
-- E-mail obrigatório no formulário da escola.
-- E-mail salvo no Firebase.
-- E-mail exibido no controle e no CSV.
-- Ações compactadas em `Mais ações`.
-- Devolução e exclusão.
-- Filtros de devolvidos e tentativas.
-- Página de obrigado com tentativa de verificação.
-
-Restaurado no checkout:
-- `redirect_url` voltou a ser exatamente `/obrigado.html`, sem parâmetros extras.
-- `items` voltou a ser 1 item com o valor total.
-- A descrição do item volta a levar produto + quantidade + aluno + turma.
-- `customer` voltou a enviar apenas `name` e `phone_number`, como na primeira versão.
-- O e-mail fica salvo no nosso sistema, mas não é enviado para a InfinitePay nesta versão.
-- Não enviamos endereço.
-- O `payloadResumoInfinitePay` é salvo no Firebase para auditoria.
+Importante: se a própria tela da InfinitePay não reconhecer o Pix, isso não é resolvido pelo front da escola. O plano operacional é localizar a tentativa no filtro `Tentativas aguardando pagamento` e confirmar manualmente após conferir no app da InfinitePay.
 
 
-## Ajustes da versão 9 — teste com endereço no payload da InfinitePay
+## Ajustes da versão 11 — payload limpo + `paid` flexível
 
-Esta versão é um teste para tentar reproduzir o comportamento da primeira compra que funcionou.
+Esta versão aplica a tese mais provável:
 
-- Página de compra agora coleta endereço obrigatório:
-  - CEP
-  - Rua/Avenida
-  - Bairro
-  - Número
-  - Complemento opcional
-- O endereço é salvo no Firebase.
-- O endereço é enviado para a InfinitePay no objeto `address`.
-- O checkout continua no formato mais estável:
-  - 1 item único com valor total;
-  - descrição do item com produto + aluno + turma;
-  - customer com nome e telefone;
-  - redirect_url simples;
-  - webhook_url mantida.
-- O e-mail continua obrigatório no nosso formulário e salvo no Firebase, mas não é enviado para a InfinitePay nesta versão para manter o teste focado no endereço.
+1. Voltar para payload limpo, sem `address`.
+2. Manter formulário mínimo:
+   - nome;
+   - WhatsApp;
+   - e-mail;
+   - aluno;
+   - turma;
+   - quantidade.
+3. Enviar para a InfinitePay apenas:
+   - item único com valor total;
+   - descrição completa do produto;
+   - `customer` com nome, e-mail e telefone;
+   - `redirect_url`;
+   - `webhook_url`;
+   - `order_nsu`.
+4. Corrigir `verificar-pagamento.js`:
+   - aceita `paid: true`;
+   - aceita `paid: 1`;
+   - aceita `paid: "true"`;
+   - aceita status `paid`, `approved`, `aprovado`, `pago`, `confirmado`;
+   - aceita `paid_amount > 0`.
+5. Salva `paidDetection` no Firestore para diagnosticar por que a consulta considerou pago ou não.

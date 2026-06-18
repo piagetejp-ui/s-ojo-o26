@@ -72,6 +72,45 @@ function getBaseUrl(req) {
   return (process.env.PUBLIC_BASE_URL || `https://${req.headers.host}`).replace(/\/$/, "");
 }
 
+function detectPaid(data) {
+  const statusText = String(data.status || data.payment_status || data.status_pagamento || "").toLowerCase();
+  const paidRaw = data.paid;
+  const successRaw = data.success;
+  const paidAmount = Number(data.paid_amount || data.paidAmount || data.amount_paid || 0);
+
+  const paidByRaw =
+    paidRaw === true ||
+    paidRaw === 1 ||
+    String(paidRaw).toLowerCase() === "true" ||
+    String(paidRaw).toLowerCase() === "1" ||
+    String(paidRaw).toLowerCase() === "paid" ||
+    String(paidRaw).toLowerCase() === "pago";
+
+  const paidByStatus =
+    statusText === "paid" ||
+    statusText === "approved" ||
+    statusText === "aprovado" ||
+    statusText === "pago" ||
+    statusText === "confirmado" ||
+    statusText === "confirmed";
+
+  const paidByAmount = paidAmount > 0;
+
+  // success sozinho pode significar apenas que a consulta deu certo.
+  // Por segurança, usamos success junto com valor pago.
+  const paidBySuccessAmount = (successRaw === true || String(successRaw).toLowerCase() === "true") && paidByAmount;
+
+  const paid = Boolean(paidByRaw || paidByStatus || paidByAmount || paidBySuccessAmount);
+
+  let reason = "not_paid";
+  if (paidByRaw) reason = "paid_field";
+  else if (paidByStatus) reason = "status";
+  else if (paidByAmount) reason = "paid_amount";
+  else if (paidBySuccessAmount) reason = "success_with_amount";
+
+  return { paid, reason, statusText, paidRaw, paidAmount };
+}
+
 module.exports = async function handler(req, res) {
   if (req.method !== "POST") {
     return json(res, 405, { error: "Método não permitido." });
@@ -108,8 +147,9 @@ module.exports = async function handler(req, res) {
     let data = {};
     try { data = JSON.parse(text); } catch { data = { raw: text }; }
 
-    const statusText = String(data.status || data.payment_status || "").toLowerCase();
-    const paid = Boolean(data.paid === true || statusText === "paid" || statusText === "approved" || statusText === "aprovado");
+    const paidInfo = detectPaid(data);
+    const paid = paidInfo.paid;
+
     const agora = new Date().toISOString();
 
     if (paid) {
@@ -123,6 +163,7 @@ module.exports = async function handler(req, res) {
         amountCentavos: data.amount || null,
         paidAmountCentavos: data.paid_amount || null,
         paymentCheckPayload: data,
+        paidDetection: paidInfo,
         atualizadoEm: agora,
         historico: admin.firestore.FieldValue.arrayUnion({
           tipo: "pagamento_confirmado_payment_check",
@@ -136,6 +177,7 @@ module.exports = async function handler(req, res) {
       await db.collection(COLLECTION).doc(orderNsu).set({
         ultimoPaymentCheckEm: agora,
         paymentCheckPayload: data,
+        paidDetection: paidInfo,
         atualizadoEm: agora
       }, { merge: true });
     }
@@ -143,6 +185,7 @@ module.exports = async function handler(req, res) {
     return json(res, 200, {
       ok: true,
       paid,
+      paidDetection: paidInfo,
       infinitepay: data
     });
   } catch (error) {

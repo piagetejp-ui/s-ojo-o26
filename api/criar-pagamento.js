@@ -48,17 +48,45 @@ function calculate(qtd) {
   const descontoExtra = Number(process.env.DESCONTO_EXTRA_POR_INGRESSO || 5);
 
   const subtotal = quantidade * preco;
-  const descontoAutomatico = Math.max(0, quantidade - descontoAposQtd) * descontoExtra;
+  const qtdComDesconto = Math.max(0, quantidade - descontoAposQtd);
+  const descontoAutomatico = qtdComDesconto * descontoExtra;
   const total = Math.max(0, subtotal - descontoAutomatico);
 
   return {
     quantidade,
     preco,
+    descontoAposQtd,
+    descontoExtra,
+    qtdComDesconto,
     subtotal,
     descontoAutomatico,
     total,
     totalCentavos: moneyToCents(total)
   };
+}
+
+function buildItems(calc) {
+  const regularQty = Math.min(calc.quantidade, calc.descontoAposQtd);
+  const discountedQty = Math.max(0, calc.quantidade - calc.descontoAposQtd);
+  const items = [];
+
+  if (regularQty > 0) {
+    items.push({
+      quantity: regularQty,
+      price: moneyToCents(calc.preco),
+      description: "Ingresso São João da Fé 2026"
+    });
+  }
+
+  if (discountedQty > 0) {
+    items.push({
+      quantity: discountedQty,
+      price: moneyToCents(Math.max(0, calc.preco - calc.descontoExtra)),
+      description: "Ingresso São João da Fé 2026 com desconto"
+    });
+  }
+
+  return items;
 }
 
 function makeOrderNsu() {
@@ -84,11 +112,6 @@ module.exports = async function handler(req, res) {
     const comprador = String(body.comprador || "").trim();
     const whatsapp = String(body.whatsapp || "").trim();
     const email = String(body.email || "").trim().toLowerCase();
-    const cep = String(body.cep || "").replace(/\D/g, "");
-    const rua = String(body.rua || "").trim();
-    const bairro = String(body.bairro || "").trim();
-    const numero = String(body.numero || "").trim();
-    const complemento = String(body.complemento || "").trim();
     const aluno = String(body.aluno || "").trim();
     const turma = String(body.turma || "").trim();
     const quantidade = Math.max(1, Math.floor(Number(body.quantidade) || 1));
@@ -99,10 +122,6 @@ module.exports = async function handler(req, res) {
 
     if (!/^\S+@\S+\.\S+$/.test(email)) {
       return json(res, 400, { error: "Informe um e-mail válido." });
-    }
-
-    if (!cep || cep.length !== 8 || !rua || !bairro || !numero) {
-      return json(res, 400, { error: "Informe endereço completo: CEP, rua, bairro e número." });
     }
 
     const handle = process.env.INFINITEPAY_HANDLE || "piaget";
@@ -116,13 +135,6 @@ module.exports = async function handler(req, res) {
       comprador,
       whatsapp,
       email,
-      endereco: {
-        cep,
-        street: rua,
-        neighborhood: bairro,
-        number: numero,
-        complement: complemento
-      },
       aluno,
       turma,
       dataCompra: agora,
@@ -156,7 +168,7 @@ module.exports = async function handler(req, res) {
     const payloadInfinite = {
       handle,
       order_nsu: orderNsu,
-      redirect_url: `${baseUrl}/obrigado.html`,
+      redirect_url: `${baseUrl}/obrigado.html?order_nsu=${encodeURIComponent(orderNsu)}`,
       webhook_url: `${baseUrl}/api/webhook-infinitepay`,
       items: [
         {
@@ -165,35 +177,20 @@ module.exports = async function handler(req, res) {
           description: `São João da Fé 2026 - ${calc.quantidade} ingresso(s) - ${aluno} - ${turma}`
         }
       ]
-    };
+};
 
     const phone = normalizePhone(whatsapp);
+
+    payloadInfinite.customer = {
+      name: comprador,
+      email
+    };
+
     if (phone) {
-      payloadInfinite.customer = {
-        name: comprador,
-        phone_number: phone
-      };
-    } else {
-      payloadInfinite.customer = {
-        name: comprador
-      };
+      payloadInfinite.customer.phone_number = phone;
     }
 
-    await db.collection(COLLECTION).doc(orderNsu).set({
-      payloadResumoInfinitePay: {
-        handle,
-        order_nsu: orderNsu,
-        redirect_url: payloadInfinite.redirect_url,
-        webhook_url: payloadInfinite.webhook_url,
-        items: payloadInfinite.items || [],
-        customer: {
-          name: payloadInfinite.customer?.name || "",
-          phone_number: payloadInfinite.customer?.phone_number || ""
-        },
-        address: payloadInfinite.address || null
-      },
-      atualizadoEm: new Date().toISOString()
-    }, { merge: true });
+    // Payload limpo: sem address. A InfinitePay pode pedir endereço conforme configuração interna do checkout.
 
     const response = await fetch("https://api.checkout.infinitepay.io/links", {
       method: "POST",
@@ -241,6 +238,8 @@ module.exports = async function handler(req, res) {
 
     await db.collection(COLLECTION).doc(orderNsu).set({
       checkoutUrl,
+      redirectUrl: `${baseUrl}/obrigado.html?order_nsu=${encodeURIComponent(orderNsu)}`,
+      webhookUrl: `${baseUrl}/api/webhook-infinitepay`,
       respostaCriacaoLink: data,
       atualizadoEm: new Date().toISOString()
     }, { merge: true });

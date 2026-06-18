@@ -194,39 +194,8 @@
 
         <label>
           E-mail
-          <input id="email" type="email" required autocomplete="email" placeholder="email@exemplo.com">
+          <input id="email" type="email" required required required autocomplete="email" placeholder="email@exemplo.com">
         </label>
-
-        <div class="section-title">Endereço do responsável</div>
-
-        <div class="grid">
-          <label>
-            CEP
-            <input id="cep" required inputmode="numeric" autocomplete="postal-code" placeholder="64000-000">
-          </label>
-
-          <label>
-            Número
-            <input id="numero" required autocomplete="address-line2" placeholder="123">
-          </label>
-        </div>
-
-        <label>
-          Rua / Avenida
-          <input id="rua" required autocomplete="address-line1" placeholder="Rua, avenida, travessa...">
-        </label>
-
-        <div class="grid">
-          <label>
-            Bairro
-            <input id="bairro" required autocomplete="address-level2" placeholder="Bairro">
-          </label>
-
-          <label>
-            Complemento
-            <input id="complemento" autocomplete="address-line3" placeholder="Apartamento, casa, referência...">
-          </label>
-        </div>
 
         <div class="grid">
           <label>
@@ -337,11 +306,6 @@
           comprador: document.getElementById("comprador").value.trim(),
           whatsapp: document.getElementById("whatsapp").value.trim(),
           email: document.getElementById("email").value.trim(),
-          cep: document.getElementById("cep").value.trim(),
-          rua: document.getElementById("rua").value.trim(),
-          bairro: document.getElementById("bairro").value.trim(),
-          numero: document.getElementById("numero").value.trim(),
-          complemento: document.getElementById("complemento").value.trim(),
           aluno: document.getElementById("aluno").value.trim(),
           turma: document.getElementById("turma").value,
           quantidade: c.qtd
