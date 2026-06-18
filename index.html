@@ -94,6 +94,54 @@
       box-shadow:0 7px 0 rgba(0,0,0,.18);
     }
 
+    .title-row {
+      display:flex;
+      align-items:flex-start;
+      gap:18px;
+      flex-wrap:wrap;
+    }
+
+    .update-panel {
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      align-items:stretch;
+      padding-top:4px;
+    }
+
+    .update-pill {
+      background:rgba(255,255,255,.12);
+      border:1px solid rgba(255,255,255,.22);
+      color:rgba(255,255,255,.82);
+      border-radius:16px;
+      padding:9px 12px;
+      min-width:170px;
+      backdrop-filter:blur(6px);
+      box-shadow:0 8px 20px rgba(0,0,0,.12);
+    }
+
+    .update-pill span {
+      display:block;
+      font-size:.68rem;
+      text-transform:uppercase;
+      letter-spacing:.08em;
+      font-weight:900;
+      color:var(--amarelo);
+      margin-bottom:3px;
+    }
+
+    .update-pill strong {
+      display:block;
+      font-size:.92rem;
+      color:white;
+      line-height:1.25;
+    }
+
+    .update-pill.primary {
+      background:rgba(244,124,32,.25);
+      border-color:rgba(255,212,59,.38);
+    }
+
     .header-actions {
       display:flex;
       gap:8px;
@@ -724,6 +772,19 @@
         width:100%;
       }
 
+      .title-row {
+        gap:10px;
+      }
+
+      .update-panel {
+        width:100%;
+      }
+
+      .update-pill {
+        flex:1 1 150px;
+        min-width:0;
+      }
+
       h1 {
         font-size:2.35rem;
       }
@@ -752,7 +813,19 @@
     <div class="wrap topbar">
       <div>
         <p class="brand-small">Escola Piaget</p>
-        <h1>Controle de Entrega</h1>
+        <div class="title-row">
+          <h1>Controle de Entrega</h1>
+          <div class="update-panel" aria-label="Atualização do controle">
+            <div class="update-pill primary">
+              <span>Online até</span>
+              <strong id="lastOnlineUpdate">Carregando...</strong>
+            </div>
+            <div class="update-pill">
+              <span>Base atualizada</span>
+              <strong id="lastBaseUpdate">Carregando...</strong>
+            </div>
+          </div>
+        </div>
         <div class="subtitle">São João da Fé 2026</div>
       </div>
       <div class="header-actions">
@@ -1086,6 +1159,8 @@
       loginError: $("loginError"),
       passwordInput: $("passwordInput"),
       logout: $("logoutBtn"),
+      lastOnlineUpdate: $("lastOnlineUpdate"),
+      lastBaseUpdate: $("lastBaseUpdate"),
       search: $("searchInput"),
       status: $("statusFilter"),
       start: $("startDate"),
@@ -1240,6 +1315,8 @@
           render();
         }, (error) => {
           console.error(error);
+          el.lastOnlineUpdate.textContent = "Erro ao carregar";
+          el.lastBaseUpdate.textContent = "Verificar Firebase";
           toast("Erro de permissão no Firestore.");
         });
     }
@@ -1275,11 +1352,51 @@
     function render() {
       const list = filtered();
 
+      renderUpdates();
       renderStats(list);
       renderTable(list);
       renderCards(list);
 
       el.empty.style.display = list.length ? "none" : "block";
+    }
+
+    function renderUpdates() {
+      const onlineOrders = orders.filter(isOnlineOrder);
+      const latestOnline = maxDate(onlineOrders.map(o => o.dataCompra || o.criadoEm));
+      const latestBase = maxDate(orders.map(o => o.atualizadoEm || o.criadoEm || o.dataCompra));
+
+      el.lastOnlineUpdate.textContent = latestOnline ? date(latestOnline) : "Sem pedidos online";
+      el.lastBaseUpdate.textContent = latestBase ? date(latestBase) : "Sem registros";
+    }
+
+    function isOnlineOrder(o) {
+      const id = String(o.idPedido || "");
+      const origem = String(o.origem || "").toLowerCase();
+
+      if (id.startsWith("MANUAL")) return false;
+      if (origem.includes("manual")) return false;
+
+      return true;
+    }
+
+    function maxDate(values) {
+      let best = null;
+      let bestTime = 0;
+
+      for (const value of values) {
+        if (!value) continue;
+
+        const normalized = normalizeDate(value);
+        const parsed = new Date(normalized);
+        const time = parsed.getTime();
+
+        if (!Number.isNaN(time) && time > bestTime) {
+          bestTime = time;
+          best = normalized;
+        }
+      }
+
+      return best;
     }
 
     function filtered() {
