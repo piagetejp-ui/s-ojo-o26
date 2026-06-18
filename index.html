@@ -925,7 +925,7 @@
       <h3>Atualização por imagem</h3>
       <p>
         Envie o print novo da tela de pedidos para gerar o JSON de atualização. Depois use
-        <strong>Opções &gt; Importar pedidos JSON/CSV</strong>. O sistema usa o <strong>ID do pedido</strong>, não duplica e mantém as entregas já marcadas.
+        <strong>Opções &gt; Importar pedidos JSON/CSV</strong>. As compras feitas na página nova de vendas entram automaticamente como <strong>Aguardando pagamento</strong> e mudam para <strong>Pago</strong> quando a InfinitePay confirmar.
       </p>
     </section>
   </main>
@@ -1456,7 +1456,10 @@
     function renderTable(list) {
       el.table.innerHTML = list.map(o => {
         const origemLabel = getOrigemLabel(o);
-        const showDeliverButton = (o.statusEntrega || "Pendente") !== "Entregue";
+        const pago = isPaymentConfirmed(o);
+        const aguardandoPagamento = isWaitingPayment(o);
+        const showDeliverButton = (o.statusEntrega || "Pendente") !== "Entregue" && pago;
+        const showPaymentButton = aguardandoPagamento;
 
         return `
           <tr>
@@ -1486,6 +1489,7 @@
             </td>
             <td>
               <div class="row-actions">
+                ${showPaymentButton ? `<button class="btn btn-success" onclick="confirmPayment('${escJs(o.idPedido)}')">Confirmar pagamento</button>` : ""}
                 ${showDeliverButton ? `<button class="btn btn-primary" onclick="openDeliver('${escJs(o.idPedido)}')">Dar baixa</button>` : ""}
                 <button class="btn btn-secondary" onclick="openEdit('${escJs(o.idPedido)}')">Editar</button>
               </div>
@@ -1498,7 +1502,10 @@
     function renderCards(list) {
       el.cards.innerHTML = list.map(o => {
         const origemLabel = getOrigemLabel(o);
-        const showDeliverButton = (o.statusEntrega || "Pendente") !== "Entregue";
+        const pago = isPaymentConfirmed(o);
+        const aguardandoPagamento = isWaitingPayment(o);
+        const showDeliverButton = (o.statusEntrega || "Pendente") !== "Entregue" && pago;
+        const showPaymentButton = aguardandoPagamento;
 
         return `
           <article class="order-card">
@@ -1539,12 +1546,63 @@
         return { texto: "Manual", classe: "Manual" };
       }
 
+      if (origem.includes("checkout")) {
+        return { texto: "Checkout", classe: "Online" };
+      }
+
       return { texto: "Online", classe: "Online" };
+    }
+
+    function isWaitingPayment(o) {
+      const status = norm(o.statusPagamento || "");
+      return status.includes("aguardando") || status.includes("pendente pagamento");
+    }
+
+    function isPaymentConfirmed(o) {
+      const status = norm(o.statusPagamento || "");
+      return status === "pago" || status === "aprovado" || status === "confirmado";
+    }
+
+    async function confirmPayment(id) {
+      if (!db || !id) return;
+
+      const o = orders.find(x => x.idPedido === id);
+      if (!o) return;
+
+      const ok = confirm("Confirmar pagamento deste pedido manualmente? Use isso somente após conferir no app/comprovante da InfinitePay.");
+      if (!ok) return;
+
+      const agora = new Date().toISOString();
+
+      try {
+        await db.collection(COLLECTION).doc(id).set({
+          statusPagamento: "Pago",
+          formaRecebimento: o.formaRecebimento || "InfinitePay",
+          pagamentoConfirmadoManual: true,
+          pagamentoConfirmadoEm: agora,
+          atualizadoEm: agora,
+          historico: firebase.firestore.FieldValue.arrayUnion({
+            tipo: "pagamento_confirmado_manual",
+            data: agora,
+            observacao: "Pagamento confirmado manualmente pela secretaria."
+          })
+        }, { merge: true });
+
+        toast("Pagamento confirmado. Pedido liberado para baixa.");
+      } catch (error) {
+        console.error(error);
+        alert("Erro ao confirmar pagamento.");
+      }
     }
 
     function openDeliver(id) {
       const o = orders.find(x => x.idPedido === id);
       if (!o) return;
+
+      if (!isPaymentConfirmed(o)) {
+        alert("Esse pedido ainda não está com pagamento confirmado. Confira o pagamento antes de dar baixa.");
+        return;
+      }
 
       currentEditId = id;
       currentModalMode = "deliver";
@@ -2099,6 +2157,7 @@
 
     window.openDeliver = openDeliver;
     window.openEdit = openEdit;
+    window.confirmPayment = confirmPayment;
   </script>
 </body>
 </html>
