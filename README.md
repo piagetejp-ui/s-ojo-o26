@@ -40,3 +40,23 @@ A `FIREBASE_PRIVATE_KEY` deve ser copiada do JSON da Service Account. Se o Verce
 3. Faça um pedido de teste.
 4. Confira se ele aparece no `index.html` como `Aguardando pagamento`.
 5. Depois de pagar, o webhook ou a página de obrigado deve atualizar para `Pago`.
+
+
+## Ajustes da versão 2
+
+- Tentativas de pagamento não aparecem na secretaria e não entram nos totais.
+- O pedido só aparece no controle quando o pagamento estiver confirmado como Pago/Aprovado/Confirmado.
+- A página de compra continua criando o pedido como Aguardando pagamento, mas ele fica oculto no painel.
+- O backend não envia `customer` nem `address` para a InfinitePay, para tentar reduzir campos extras no checkout.
+- Os itens agora são enviados com quantidade e preço unitário, separando ingressos com preço cheio e ingressos com desconto.
+
+
+## Ajustes da versão 3
+
+- Botão `Devolver` para marcar pedido como devolvido/cancelado no controle.
+- Pedido devolvido não conta como ingresso vendido, não conta como pendente e não conta como entregue.
+- Botão `Excluir` para apagar definitivamente pedidos de teste ou lançamentos errados.
+- Exclusão exige digitar `EXCLUIR`.
+- Filtro `Devolvidos` para consultar pedidos devolvidos.
+- Filtro `Tentativas aguardando pagamento` para localizar tentativas não concluídas.
+- Atenção: marcar como devolvido no sistema não estorna automaticamente a InfinitePay; o estorno financeiro deve ser feito pelo app/painel da InfinitePay.

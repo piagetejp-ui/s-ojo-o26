@@ -48,17 +48,45 @@ function calculate(qtd) {
   const descontoExtra = Number(process.env.DESCONTO_EXTRA_POR_INGRESSO || 5);
 
   const subtotal = quantidade * preco;
-  const descontoAutomatico = Math.max(0, quantidade - descontoAposQtd) * descontoExtra;
+  const qtdComDesconto = Math.max(0, quantidade - descontoAposQtd);
+  const descontoAutomatico = qtdComDesconto * descontoExtra;
   const total = Math.max(0, subtotal - descontoAutomatico);
 
   return {
     quantidade,
     preco,
+    descontoAposQtd,
+    descontoExtra,
+    qtdComDesconto,
     subtotal,
     descontoAutomatico,
     total,
     totalCentavos: moneyToCents(total)
   };
+}
+
+function buildItems(calc) {
+  const regularQty = Math.min(calc.quantidade, calc.descontoAposQtd);
+  const discountedQty = Math.max(0, calc.quantidade - calc.descontoAposQtd);
+  const items = [];
+
+  if (regularQty > 0) {
+    items.push({
+      quantity: regularQty,
+      price: moneyToCents(calc.preco),
+      description: "Ingresso São João da Fé 2026"
+    });
+  }
+
+  if (discountedQty > 0) {
+    items.push({
+      quantity: discountedQty,
+      price: moneyToCents(Math.max(0, calc.preco - calc.descontoExtra)),
+      description: "Ingresso São João da Fé 2026 com desconto"
+    });
+  }
+
+  return items;
 }
 
 function makeOrderNsu() {
@@ -136,26 +164,10 @@ module.exports = async function handler(req, res) {
       order_nsu: orderNsu,
       redirect_url: `${baseUrl}/obrigado.html`,
       webhook_url: `${baseUrl}/api/webhook-infinitepay`,
-      items: [
-        {
-          quantity: 1,
-          price: calc.totalCentavos,
-          description: `São João da Fé 2026 - ${calc.quantidade} ingresso(s) - ${aluno} - ${turma}`
-        }
-      ]
+      items: buildItems(calc)
     };
 
-    const phone = normalizePhone(whatsapp);
-    if (phone) {
-      payloadInfinite.customer = {
-        name: comprador,
-        phone_number: phone
-      };
-    } else {
-      payloadInfinite.customer = {
-        name: comprador
-      };
-    }
+    // Não enviamos customer/address para o checkout para manter a tela da InfinitePay o mais simples possível.
 
     const response = await fetch("https://api.checkout.infinitepay.io/links", {
       method: "POST",

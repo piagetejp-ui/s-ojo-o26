@@ -228,13 +228,13 @@
           <div class="row"><span>Subtotal</span><strong id="subtotal">R$ 35,00</strong></div>
           <div class="row"><span>Desconto automático</span><strong id="desconto">R$ 0,00</strong></div>
           <div class="row total"><span>Total</span><strong id="total">R$ 35,00</strong></div>
-          <div style="color:var(--muted);font-size:.88rem;">
-            Regra: a partir do 5º ingresso, desconto de R$ 5,00 em cada ingresso extra.
+          <div id="discountMessage" style="color:var(--muted);font-size:.88rem;">
+            A partir do 5º ingresso, cada ingresso extra sai com R$ 5,00 de desconto.
           </div>
         </div>
 
         <div class="warn">
-          Após o pagamento, aguarde a confirmação. O pedido aparecerá automaticamente no controle de entrega da escola.
+          O pedido só entra no controle da escola após a confirmação do pagamento.
         </div>
 
         <div class="error" id="errorBox"></div>
@@ -271,6 +271,15 @@
       document.getElementById("subtotal").textContent = money(subtotal);
       document.getElementById("desconto").textContent = money(desconto);
       document.getElementById("total").textContent = money(total);
+
+      const msg = document.getElementById("discountMessage");
+      if (qtd > DESCONTO_APOS_QTD) {
+        msg.textContent = `Desconto aplicado: ${money(desconto)} de desconto automático.`;
+        msg.style.color = "#15803d";
+      } else {
+        msg.textContent = "A partir do 5º ingresso, cada ingresso extra sai com R$ 5,00 de desconto.";
+        msg.style.color = "var(--muted)";
+      }
 
       return { qtd, subtotal, desconto, total };
     }
