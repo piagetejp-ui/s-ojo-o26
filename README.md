@@ -108,3 +108,26 @@ A `FIREBASE_PRIVATE_KEY` deve ser copiada do JSON da Service Account. Se o Verce
 - Mantém item único com valor total, modelo mais simples que funcionou melhor no primeiro teste.
 - Salva `payloadResumoInfinitePay` no Firestore para auditoria do que foi enviado para a InfinitePay.
 - Mantém reforço de confirmação da V6.
+
+
+## Ajustes da versão 8 — rollback do checkout para a primeira versão que funcionou
+
+Esta versão mantém as melhorias do painel, mas restaura o payload enviado para a InfinitePay ao modelo da primeira versão que confirmou o Pix corretamente.
+
+Mantido no painel:
+- E-mail obrigatório no formulário da escola.
+- E-mail salvo no Firebase.
+- E-mail exibido no controle e no CSV.
+- Ações compactadas em `Mais ações`.
+- Devolução e exclusão.
+- Filtros de devolvidos e tentativas.
+- Página de obrigado com tentativa de verificação.
+
+Restaurado no checkout:
+- `redirect_url` voltou a ser exatamente `/obrigado.html`, sem parâmetros extras.
+- `items` voltou a ser 1 item com o valor total.
+- A descrição do item volta a levar produto + quantidade + aluno + turma.
+- `customer` voltou a enviar apenas `name` e `phone_number`, como na primeira versão.
+- O e-mail fica salvo no nosso sistema, mas não é enviado para a InfinitePay nesta versão.
+- Não enviamos endereço.
+- O `payloadResumoInfinitePay` é salvo no Firebase para auditoria.

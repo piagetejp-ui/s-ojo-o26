@@ -48,45 +48,17 @@ function calculate(qtd) {
   const descontoExtra = Number(process.env.DESCONTO_EXTRA_POR_INGRESSO || 5);
 
   const subtotal = quantidade * preco;
-  const qtdComDesconto = Math.max(0, quantidade - descontoAposQtd);
-  const descontoAutomatico = qtdComDesconto * descontoExtra;
+  const descontoAutomatico = Math.max(0, quantidade - descontoAposQtd) * descontoExtra;
   const total = Math.max(0, subtotal - descontoAutomatico);
 
   return {
     quantidade,
     preco,
-    descontoAposQtd,
-    descontoExtra,
-    qtdComDesconto,
     subtotal,
     descontoAutomatico,
     total,
     totalCentavos: moneyToCents(total)
   };
-}
-
-function buildItems(calc) {
-  const regularQty = Math.min(calc.quantidade, calc.descontoAposQtd);
-  const discountedQty = Math.max(0, calc.quantidade - calc.descontoAposQtd);
-  const items = [];
-
-  if (regularQty > 0) {
-    items.push({
-      quantity: regularQty,
-      price: moneyToCents(calc.preco),
-      description: "Ingresso São João da Fé 2026"
-    });
-  }
-
-  if (discountedQty > 0) {
-    items.push({
-      quantity: discountedQty,
-      price: moneyToCents(Math.max(0, calc.preco - calc.descontoExtra)),
-      description: "Ingresso São João da Fé 2026 com desconto"
-    });
-  }
-
-  return items;
 }
 
 function makeOrderNsu() {
@@ -168,9 +140,8 @@ module.exports = async function handler(req, res) {
     const payloadInfinite = {
       handle,
       order_nsu: orderNsu,
-      redirect_url: `${baseUrl}/obrigado.html?order_nsu=${encodeURIComponent(orderNsu)}`,
+      redirect_url: `${baseUrl}/obrigado.html`,
       webhook_url: `${baseUrl}/api/webhook-infinitepay`,
-      description: `São João da Fé 2026 - ${calc.quantidade} ingresso(s) - ${aluno} - ${turma}`,
       items: [
         {
           quantity: 1,
@@ -178,20 +149,19 @@ module.exports = async function handler(req, res) {
           description: `São João da Fé 2026 - ${calc.quantidade} ingresso(s) - ${aluno} - ${turma}`
         }
       ]
-};
-
-    const phone = normalizePhone(whatsapp);
-
-    payloadInfinite.customer = {
-      name: comprador,
-      email
     };
 
+    const phone = normalizePhone(whatsapp);
     if (phone) {
-      payloadInfinite.customer.phone_number = phone;
+      payloadInfinite.customer = {
+        name: comprador,
+        phone_number: phone
+      };
+    } else {
+      payloadInfinite.customer = {
+        name: comprador
+      };
     }
-
-    // Não enviamos address. O endereço, se aparecer, deve ser controlado nas configurações do checkout da InfinitePay.
 
     await db.collection(COLLECTION).doc(orderNsu).set({
       payloadResumoInfinitePay: {
@@ -199,11 +169,9 @@ module.exports = async function handler(req, res) {
         order_nsu: orderNsu,
         redirect_url: payloadInfinite.redirect_url,
         webhook_url: payloadInfinite.webhook_url,
-        description: payloadInfinite.description || "",
         items: payloadInfinite.items || [],
         customer: {
           name: payloadInfinite.customer?.name || "",
-          email: payloadInfinite.customer?.email || "",
           phone_number: payloadInfinite.customer?.phone_number || ""
         }
       },
@@ -256,8 +224,6 @@ module.exports = async function handler(req, res) {
 
     await db.collection(COLLECTION).doc(orderNsu).set({
       checkoutUrl,
-      redirectUrl: `${baseUrl}/obrigado.html?order_nsu=${encodeURIComponent(orderNsu)}`,
-      webhookUrl: `${baseUrl}/api/webhook-infinitepay`,
       respostaCriacaoLink: data,
       atualizadoEm: new Date().toISOString()
     }, { merge: true });
