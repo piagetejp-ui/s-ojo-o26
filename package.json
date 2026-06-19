@@ -1,0 +1,12 @@
+{
+  "name": "saojoao26-integrado",
+  "version": "1.0.0",
+  "private": true,
+  "type": "commonjs",
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "firebase-admin": "^12.7.0"
+  }
+}
