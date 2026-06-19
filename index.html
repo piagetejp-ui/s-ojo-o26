@@ -6,6 +6,7 @@
   <title>Controle de Entrega | São João da Fé</title>
 
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
 
   <style>
@@ -849,14 +850,18 @@
     <div class="login-card">
       <p class="brand-small" style="color:var(--laranja);">Escola Piaget</p>
       <h2>Controle São João</h2>
-      <p>Acesso interno para controle de pagamento e entrega dos ingressos.</p>
+      <p>Acesso interno para controle de pagamento e entrega dos ingressos. Use o e-mail e a senha autorizados da secretaria.</p>
       <form id="loginForm">
         <label>
-          Senha de acesso
-          <input id="passwordInput" type="password" placeholder="Digite a senha" autocomplete="current-password">
+          E-mail de acesso
+          <input id="emailInput" type="email" placeholder="secretaria@escola.com.br" autocomplete="username" required>
         </label>
-        <button class="btn btn-primary" type="submit">Entrar</button>
-        <div class="login-error" id="loginError">Senha incorreta.</div>
+        <label>
+          Senha
+          <input id="passwordInput" type="password" placeholder="Digite a senha" autocomplete="current-password" required>
+        </label>
+        <button class="btn btn-primary" id="loginBtn" type="submit">Entrar</button>
+        <div class="login-error" id="loginError">E-mail ou senha incorretos.</div>
       </form>
     </div>
   </section>
@@ -1174,9 +1179,6 @@
   <div class="toast" id="toast"></div>
 
   <script>
-    const APP_PASSWORD = "piaget2026";
-    const AUTH_KEY = "sao_joao_fe_2026_auth";
-
     const PRECO_PADRAO = 35;
     const DESCONTO_APOS_QTD = 4;
     const DESCONTO_EXTRA_POR_INGRESSO = 5;
@@ -1192,6 +1194,7 @@
 
     const COLLECTION = "sao_joao_fe_2026_pedidos";
 
+    let auth = null;
     let db = null;
     let orders = [];
     let currentEditId = null;
@@ -1206,13 +1209,17 @@
       end: ""
     };
 
+    let appBound = false;
+
     const $ = (id) => document.getElementById(id);
 
     const el = {
       loginScreen: $("loginScreen"),
       loginForm: $("loginForm"),
       loginError: $("loginError"),
+      emailInput: $("emailInput"),
       passwordInput: $("passwordInput"),
+      loginBtn: $("loginBtn"),
       logout: $("logoutBtn"),
       lastOnlineUpdate: $("lastOnlineUpdate"),
       lastBaseUpdate: $("lastBaseUpdate"),
@@ -1265,31 +1272,65 @@
 
     initAuth();
 
+    function initFirebaseClient() {
+      if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+      auth = firebase.auth();
+      db = firebase.firestore();
+    }
+
     function initAuth() {
-      el.loginForm.addEventListener("submit", (event) => {
-        event.preventDefault();
+      try {
+        initFirebaseClient();
 
-        const typed = el.passwordInput.value.trim();
+        auth.onAuthStateChanged((user) => {
+          if (user) {
+            unlock();
+          } else {
+            lock();
+          }
+        });
 
-        if (typed === APP_PASSWORD) {
-          sessionStorage.setItem(AUTH_KEY, "ok");
-          unlock();
-        } else {
-          el.loginError.style.display = "block";
-          el.passwordInput.select();
-        }
-      });
+        el.loginForm.addEventListener("submit", async (event) => {
+          event.preventDefault();
 
-      el.logout.addEventListener("click", () => {
-        sessionStorage.removeItem(AUTH_KEY);
-        location.reload();
-      });
+          const email = el.emailInput.value.trim();
+          const password = el.passwordInput.value;
 
-      if (sessionStorage.getItem(AUTH_KEY) === "ok") {
-        unlock();
-      } else {
-        setTimeout(() => el.passwordInput.focus(), 100);
+          el.loginError.style.display = "none";
+          el.loginBtn.disabled = true;
+          el.loginBtn.textContent = "Entrando...";
+
+          try {
+            await auth.signInWithEmailAndPassword(email, password);
+          } catch (error) {
+            console.error(error);
+            el.loginError.style.display = "block";
+            el.passwordInput.select();
+          } finally {
+            el.loginBtn.disabled = false;
+            el.loginBtn.textContent = "Entrar";
+          }
+        });
+
+        el.logout.addEventListener("click", async () => {
+          try {
+            if (unsub) unsub();
+            await auth.signOut();
+          } finally {
+            location.reload();
+          }
+        });
+      } catch (error) {
+        console.error(error);
+        el.loginError.textContent = "Erro ao iniciar login. Verifique o Firebase Authentication.";
+        el.loginError.style.display = "block";
       }
+    }
+
+    function lock() {
+      document.body.classList.add("locked");
+      el.loginScreen.style.display = "";
+      setTimeout(() => el.emailInput.focus(), 100);
     }
 
     function unlock() {
@@ -1302,9 +1343,8 @@
       bind();
 
       try {
-        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+        if (!db) initFirebaseClient();
 
-        db = firebase.firestore();
         db.enablePersistence().catch(() => null);
 
         listenOrders();
@@ -1315,6 +1355,9 @@
     }
 
     function bind() {
+      if (appBound) return;
+      appBound = true;
+
       el.applyFilter.addEventListener("click", applyFilters);
       el.clear.addEventListener("click", clearFilters);
       el.newSale.addEventListener("click", openSaleModal);

@@ -1,29 +1,87 @@
-# São João da Fé 2026 — Pacote 05
+# São João da Fé 2026 — Pacote 06
 
 ## Base
-Este pacote parte do Pacote 03, que já estava validado com o pagamento funcionando.
+Este pacote parte do Pacote 03, validado com pagamento funcionando.
 
-## Alteração principal
-A página de venda foi redesenhada de forma mais compacta e mobile-friendly.
+## Objetivo
+Proteger o painel da secretaria usando Firebase Authentication com e-mail e senha.
 
-## Ajustes feitos em `comprar.html`
-- Header mais compacto.
-- Sem bandeirinhas/decorativos exagerados.
-- O formulário aparece mais rápido no celular.
-- O resumo da compra fica antes do botão de pagamento.
-- O resumo não fica solto depois do botão.
-- Campos e botão ajustados para celular.
-- Mensagem de desconto com linguagem comercial.
-- Dados do formulário são salvos no aparelho via `localStorage`.
-- Ao voltar da InfinitePay, o botão destrava e os dados são restaurados.
+## O que mudou
+Apenas o painel da secretaria (`index.html`) foi alterado.
+
+Agora o acesso ao painel usa:
+- e-mail;
+- senha;
+- Firebase Authentication.
 
 ## O que NÃO foi alterado
+O motor de pagamento não foi mexido:
+
+- `comprar.html`
+- `obrigado.html`
 - `api/criar-pagamento.js`
 - `api/webhook-infinitepay.js`
 - `api/verificar-pagamento.js`
-- `obrigado.html`
-- `index.html`
 - `package.json`
 
-## Observação
-Se o usuário voltar do checkout para alterar quantidade ou trocar Pix por cartão, a página deve reabilitar o botão e recuperar os dados preenchidos.
+## Passo 1 — ativar login no Firebase
+
+No Firebase Console:
+
+1. Vá em `Authentication`
+2. Vá em `Sign-in method`
+3. Ative `Email/Password`
+4. Vá em `Users`
+5. Clique em `Add user`
+6. Crie o e-mail e senha da secretaria
+
+Exemplo:
+- Email: `secretaria@seudominio.com.br`
+- Senha: uma senha forte que será entregue apenas para a secretaria
+
+## Passo 2 — subir este pacote
+
+Suba os arquivos no GitHub mantendo a estrutura:
+
+- `index.html`
+- `comprar.html`
+- `obrigado.html`
+- `package.json`
+- `api/criar-pagamento.js`
+- `api/webhook-infinitepay.js`
+- `api/verificar-pagamento.js`
+
+Depois faça redeploy na Vercel.
+
+## Passo 3 — testar login
+
+Abra:
+
+`https://saojoao26.vercel.app/`
+
+Teste o login com o e-mail e senha criados no Firebase Authentication.
+
+## Passo 4 — fechar regras do Firestore
+
+Só faça isso depois de confirmar que o login funcionou.
+
+No Firestore Rules, use:
+
+```js
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /sao_joao_fe_2026_pedidos/{document} {
+      allow read, write: if request.auth != null;
+    }
+  }
+}
+```
+
+Com isso, apenas usuário autenticado consegue ler e alterar os pedidos pelo painel.
+
+## Observação importante
+
+O backend da Vercel continua conseguindo criar pedidos e confirmar pagamentos, porque usa Firebase Admin SDK.
+Essas regras bloqueiam apenas acesso direto pelo navegador sem login.
