@@ -1,28 +1,22 @@
-# São João da Fé 2026 — Pacote 03
+# São João da Fé 2026 — Pacote 04
 
 ## Base
-Este pacote parte do Pacote 02.
+Este pacote parte do Pacote 03, que já foi validado com pagamento funcionando.
 
-## Objetivo
-Enviar também o e-mail para a InfinitePay, mantendo o restante do checkout igual.
+## Alterações deste pacote
+Apenas interface/experiência:
+- `comprar.html` com visual mais temático, inspirado no convite do evento.
+- `comprar.html` muito mais amigável para celular.
+- Destaque comercial para o desconto em compras com mais ingressos.
+- `obrigado.html` com visual melhorado e mais informações do evento.
+- `obrigado.html` com botão de verificar novamente e acesso ao comprovante.
 
-## Alteração feita
-Apenas `api/criar-pagamento.js` foi alterado para incluir no payload da InfinitePay:
+## O que NÃO foi alterado
+- `index.html`
+- `package.json`
+- `api/criar-pagamento.js`
+- `api/webhook-infinitepay.js`
+- `api/verificar-pagamento.js`
 
-- `customer.name`
-- `customer.email`
-- `customer.phone_number`
-
-## O que foi mantido
-- `redirect_url` igual
-- `webhook_url` igual
-- item único com valor total
-- sem `address`
-- `comprar.html` igual ao Pacote 02
-- `index.html` igual ao Pacote 02
-- `obrigado.html` igual
-- `api/webhook-infinitepay.js` igual
-- `api/verificar-pagamento.js` igual
-
-## Risco conhecido
-Se o checkout parar de reconhecer o Pix automaticamente, já sabemos que a variável nova foi o envio de `customer.email` para a InfinitePay.
+## Observação
+O aviso "tem certeza que deseja sair?" ao clicar em continuar dentro da InfinitePay pode ser comportamento da própria plataforma. Este pacote não altera esse comportamento.
