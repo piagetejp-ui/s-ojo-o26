@@ -250,6 +250,12 @@
       border:1px solid rgba(9,37,111,.12);
     }
 
+    .btn-danger {
+      background:#fee2e2;
+      color:#991b1b;
+      border:1px solid rgba(185,28,28,.22);
+    }
+
     .btn-success {
       background:#dcfce7;
       color:var(--verde);
@@ -430,6 +436,12 @@
       color:#b91c1c;
     }
 
+    .badge.Devolvido,
+    .badge.Cancelado {
+      background:#e5e7eb;
+      color:#374151;
+    }
+
     .badge.Manual {
       background:#e0f2fe;
       color:#075985;
@@ -444,12 +456,52 @@
       display:flex;
       gap:7px;
       flex-wrap:wrap;
+      align-items:center;
     }
 
     .row-actions .btn {
       padding:9px 10px;
       border-radius:12px;
       font-size:.78rem;
+    }
+
+    .more-actions {
+      position:relative;
+      display:inline-block;
+    }
+
+    .more-actions summary {
+      list-style:none;
+      user-select:none;
+    }
+
+    .more-actions summary::-webkit-details-marker {
+      display:none;
+    }
+
+    .more-actions[open] summary {
+      filter:brightness(.98);
+    }
+
+    .more-menu {
+      position:absolute;
+      right:0;
+      top:calc(100% + 6px);
+      min-width:190px;
+      background:white;
+      border:1px solid var(--borda);
+      border-radius:16px;
+      box-shadow:var(--sombra);
+      padding:7px;
+      z-index:30;
+      display:grid;
+      gap:6px;
+    }
+
+    .more-menu .btn {
+      width:100%;
+      justify-content:flex-start;
+      box-shadow:none;
     }
 
     .cards-mobile {
@@ -847,6 +899,8 @@
           <option value="Pendente">Pendentes</option>
           <option value="Entregue">Entregues</option>
           <option value="Problema">Problema</option>
+          <option value="Devolvido">Devolvidos</option>
+          <option value="Aguardando pagamento">Tentativas aguardando pagamento</option>
         </select>
       </label>
       <label>
@@ -925,7 +979,7 @@
       <h3>Atualização por imagem</h3>
       <p>
         Envie o print novo da tela de pedidos para gerar o JSON de atualização. Depois use
-        <strong>Opções &gt; Importar pedidos JSON/CSV</strong>. As compras feitas na página nova de vendas entram automaticamente como <strong>Aguardando pagamento</strong> e mudam para <strong>Pago</strong> quando a InfinitePay confirmar.
+        <strong>Opções &gt; Importar pedidos JSON/CSV</strong>. As compras feitas na página nova de vendas só aparecem no controle depois da confirmação de pagamento da InfinitePay. Tentativas não concluídas ficam fora da lista e não entram nos totais. Pedidos devolvidos também saem dos totais. Para ver devoluções ou tentativas aguardando pagamento, use o filtro de status. Em tentativas pagas que não atualizarem sozinhas, use Verificar pagamento ou Confirmação manual após conferir no app da InfinitePay.
       </p>
     </section>
   </main>
@@ -948,6 +1002,7 @@
             <option value="Pendente">Pendente</option>
             <option value="Entregue">Entregue</option>
             <option value="Problema">Problema</option>
+            <option value="Devolvido">Devolvido</option>
           </select>
         </label>
 
@@ -1361,12 +1416,13 @@
     }
 
     function renderUpdates() {
-      const onlineOrders = orders.filter(isOnlineOrder);
-      const latestOnline = maxDate(onlineOrders.map(o => o.dataCompra || o.criadoEm));
-      const latestBase = maxDate(orders.map(o => o.atualizadoEm || o.criadoEm || o.dataCompra));
+      const onlineOrders = orders.filter(o => isOnlineOrder(o) && isPaymentConfirmed(o));
+      const visibleOrders = orders.filter(isOrderVisible);
+      const latestOnline = maxDate(onlineOrders.map(o => o.pagamentoConfirmadoEm || o.dataCompra || o.criadoEm));
+      const latestBase = maxDate(visibleOrders.map(o => o.atualizadoEm || o.criadoEm || o.dataCompra));
 
-      el.lastOnlineUpdate.textContent = latestOnline ? date(latestOnline) : "Sem pedidos online";
-      el.lastBaseUpdate.textContent = latestBase ? date(latestBase) : "Sem registros";
+      el.lastOnlineUpdate.textContent = latestOnline ? date(latestOnline) : "Sem pagamentos online";
+      el.lastBaseUpdate.textContent = latestBase ? date(latestBase) : "Sem registros confirmados";
     }
 
     function isOnlineOrder(o) {
@@ -1403,8 +1459,18 @@
       const { term, status, start, end } = appliedFilters;
 
       return orders.filter(o => {
+        if (status === "Devolvido") {
+          if (!isRefunded(o)) return false;
+        } else if (status === "Aguardando pagamento") {
+          if (!isWaitingPayment(o)) return false;
+        } else {
+          if (!isOrderVisible(o)) return false;
+          if (status !== "todos" && o.statusEntrega !== status) return false;
+        }
+
         const hay = norm([
           o.comprador,
+          o.email,
           o.aluno,
           o.turma,
           o.idPedido,
@@ -1417,7 +1483,6 @@
         ].join(" "));
 
         if (term && !hay.includes(term)) return false;
-        if (status !== "todos" && o.statusEntrega !== status) return false;
 
         const d = (o.dataCompra || o.criadoEm || "").slice(0,10);
 
@@ -1438,12 +1503,13 @@
     }
 
     function renderStats(list) {
-      const pedidos = list.length;
-      const ingressos = list.reduce((s,o) => s + num(o.quantidade), 0);
-      const pendentes = list
+      const validSales = list.filter(isOrderVisible);
+      const pedidos = validSales.length;
+      const ingressos = validSales.reduce((s,o) => s + num(o.quantidade), 0);
+      const pendentes = validSales
         .filter(o => o.statusEntrega !== "Entregue")
         .reduce((s,o) => s + num(o.quantidade), 0);
-      const entregues = list
+      const entregues = validSales
         .filter(o => o.statusEntrega === "Entregue")
         .reduce((s,o) => s + num(o.quantidade), 0);
 
@@ -1458,13 +1524,16 @@
         const origemLabel = getOrigemLabel(o);
         const pago = isPaymentConfirmed(o);
         const aguardandoPagamento = isWaitingPayment(o);
-        const showDeliverButton = (o.statusEntrega || "Pendente") !== "Entregue" && pago;
-        const showPaymentButton = aguardandoPagamento;
+        const devolvido = isRefunded(o);
+        const showDeliverButton = (o.statusEntrega || "Pendente") !== "Entregue" && pago && !devolvido;
+        const showRefundButton = pago && !devolvido;
+        const showDeleteButton = true;
 
         return `
           <tr>
             <td>
               <div class="buyer">${esc(o.comprador || "Comprador não informado")}</div>
+              ${o.email ? `<div class="mini">${esc(o.email)}</div>` : ""}
               <div class="mini">${esc(o.produto || "São João da Fé 2026")}</div>
             </td>
             <td>
@@ -1489,9 +1558,7 @@
             </td>
             <td>
               <div class="row-actions">
-                ${showPaymentButton ? `<button class="btn btn-success" onclick="confirmPayment('${escJs(o.idPedido)}')">Confirmar pagamento</button>` : ""}
-                ${showDeliverButton ? `<button class="btn btn-primary" onclick="openDeliver('${escJs(o.idPedido)}')">Dar baixa</button>` : ""}
-                <button class="btn btn-secondary" onclick="openEdit('${escJs(o.idPedido)}')">Editar</button>
+                ${renderActionButtons(o)}
               </div>
             </td>
           </tr>
@@ -1504,14 +1571,17 @@
         const origemLabel = getOrigemLabel(o);
         const pago = isPaymentConfirmed(o);
         const aguardandoPagamento = isWaitingPayment(o);
-        const showDeliverButton = (o.statusEntrega || "Pendente") !== "Entregue" && pago;
-        const showPaymentButton = aguardandoPagamento;
+        const devolvido = isRefunded(o);
+        const showDeliverButton = (o.statusEntrega || "Pendente") !== "Entregue" && pago && !devolvido;
+        const showRefundButton = pago && !devolvido;
+        const showDeleteButton = true;
 
         return `
           <article class="order-card">
             <div class="order-top">
               <div>
                 <div class="buyer">${esc(o.comprador || "Comprador não informado")}</div>
+                ${o.email ? `<div class="mini">${esc(o.email)}</div>` : ""}
                 <div class="mini">Pedido #${esc(o.idPedido)} · ${date(o.dataCompra || o.criadoEm)}</div>
               </div>
               <span class="badge ${esc(o.statusEntrega || "Pendente")}">${esc(o.statusEntrega || "Pendente")}</span>
@@ -1539,6 +1609,52 @@
       }).join("");
     }
 
+    function renderActionButtons(o) {
+      const id = escJs(o.idPedido);
+      const pago = isPaymentConfirmed(o);
+      const aguardandoPagamento = isWaitingPayment(o);
+      const devolvido = isRefunded(o);
+      const entregue = (o.statusEntrega || "Pendente") === "Entregue";
+
+      let primary = "";
+
+      if (aguardandoPagamento) {
+        primary = `<button class="btn btn-success" onclick="verifyPayment('${id}')">Verificar pagamento</button>`;
+      } else if (pago && !devolvido && !entregue) {
+        primary = `<button class="btn btn-primary" onclick="openDeliver('${id}')">Dar baixa</button>`;
+      } else {
+        primary = `<button class="btn btn-secondary" onclick="openEdit('${id}')">Editar</button>`;
+      }
+
+      const extra = [];
+
+      if (aguardandoPagamento) {
+        extra.push(`<button class="btn btn-success" onclick="confirmPayment('${id}')">Confirmar pagamento manualmente</button>`);
+      }
+
+      if (!(pago && !devolvido && !entregue)) {
+        extra.push(`<button class="btn btn-secondary" onclick="openEdit('${id}')">Editar</button>`);
+      } else {
+        extra.push(`<button class="btn btn-secondary" onclick="openEdit('${id}')">Editar</button>`);
+      }
+
+      if (pago && !devolvido) {
+        extra.push(`<button class="btn btn-danger" onclick="markRefunded('${id}')">Devolver</button>`);
+      }
+
+      extra.push(`<button class="btn btn-danger" onclick="deleteOrder('${id}')">Excluir</button>`);
+
+      return `
+        ${primary}
+        <details class="more-actions">
+          <summary class="btn btn-secondary">Mais ações ▾</summary>
+          <div class="more-menu">
+            ${extra.join("")}
+          </div>
+        </details>
+      `;
+    }
+
     function getOrigemLabel(o) {
       const origem = String(o.origem || "").toLowerCase();
 
@@ -1555,12 +1671,111 @@
 
     function isWaitingPayment(o) {
       const status = norm(o.statusPagamento || "");
-      return status.includes("aguardando") || status.includes("pendente pagamento");
+      return status.includes("aguardando") || status.includes("pendente pagamento") || status.includes("aguardando pagamento");
     }
 
     function isPaymentConfirmed(o) {
       const status = norm(o.statusPagamento || "");
       return status === "pago" || status === "aprovado" || status === "confirmado";
+    }
+
+    function isRefunded(o) {
+      const statusPagamento = norm(o.statusPagamento || "");
+      const statusEntrega = norm(o.statusEntrega || "");
+      return statusPagamento.includes("devolv") ||
+             statusPagamento.includes("estorn") ||
+             statusPagamento.includes("cancel") ||
+             statusEntrega.includes("devolv") ||
+             statusEntrega.includes("cancel");
+    }
+
+    function isOrderVisible(o) {
+      return isPaymentConfirmed(o) && !isRefunded(o);
+    }
+
+    async function markRefunded(id) {
+      if (!db || !id) return;
+
+      const o = orders.find(x => x.idPedido === id);
+      if (!o) return;
+
+      const ok = confirm("Marcar este pedido como DEVOLVIDO no controle? Isso remove dos totais de ingressos vendidos. Atenção: isso NÃO estorna o dinheiro automaticamente na InfinitePay; faça o estorno financeiro no app/conta, se necessário.");
+      if (!ok) return;
+
+      const motivo = prompt("Motivo da devolução/cancelamento:", "Devolução registrada pela secretaria");
+      if (motivo === null) return;
+
+      const agora = new Date().toISOString();
+
+      try {
+        await db.collection(COLLECTION).doc(id).set({
+          statusPagamento: "Devolvido",
+          statusEntrega: "Devolvido",
+          devolvidoEm: agora,
+          motivoDevolucao: motivo.trim(),
+          dataEntrega: "",
+          entreguePara: "",
+          entreguePor: "",
+          atualizadoEm: agora,
+          historico: firebase.firestore.FieldValue.arrayUnion({
+            tipo: "devolucao",
+            data: agora,
+            motivo: motivo.trim(),
+            statusPagamentoAnterior: o.statusPagamento || "",
+            statusEntregaAnterior: o.statusEntrega || "",
+            quantidade: o.quantidade || 0,
+            total: o.total || 0
+          })
+        }, { merge: true });
+
+        toast("Pedido marcado como devolvido e removido dos totais.");
+      } catch (error) {
+        console.error(error);
+        alert("Erro ao marcar como devolvido.");
+      }
+    }
+
+    async function deleteOrder(id) {
+      if (!db || !id) return;
+
+      const o = orders.find(x => x.idPedido === id);
+      if (!o) return;
+
+      const confirmText = prompt(`Para excluir definitivamente o pedido #${id}, digite EXCLUIR. Use isso apenas para testes ou lançamentos errados.`);
+      if (confirmText !== "EXCLUIR") return;
+
+      try {
+        await db.collection(COLLECTION).doc(id).delete();
+        toast("Pedido excluído definitivamente.");
+      } catch (error) {
+        console.error(error);
+        alert("Erro ao excluir pedido.");
+      }
+    }
+
+    async function verifyPayment(id) {
+      if (!id) return;
+
+      try {
+        toast("Verificando pagamento na InfinitePay...");
+
+        const resp = await fetch("/api/verificar-pagamento", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ order_nsu: id })
+        });
+
+        const data = await resp.json().catch(() => ({}));
+
+        if (resp.ok && data.paid) {
+          toast("Pagamento confirmado automaticamente.");
+        } else {
+          alert("Ainda não consegui confirmar automaticamente. Se o dinheiro já caiu na InfinitePay, use 'Mais ações > Confirmar pagamento manualmente'.");
+        }
+      } catch (error) {
+        console.error(error);
+        alert("Erro ao verificar pagamento. Se já conferiu no app da InfinitePay, confirme manualmente.");
+      }
     }
 
     async function confirmPayment(id) {
@@ -1987,6 +2202,7 @@
       const head = [
         "idPedido",
         "comprador",
+        "email",
         "aluno",
         "turma",
         "dataCompra",
@@ -2158,6 +2374,9 @@
     window.openDeliver = openDeliver;
     window.openEdit = openEdit;
     window.confirmPayment = confirmPayment;
+    window.verifyPayment = verifyPayment;
+    window.markRefunded = markRefunded;
+    window.deleteOrder = deleteOrder;
   </script>
 </body>
 </html>

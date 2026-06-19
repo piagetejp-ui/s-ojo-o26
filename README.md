@@ -1,42 +1,46 @@
-# São João da Fé 2026 - Sistema integrado
+# São João da Fé 2026 — Pacote 01
 
-Arquivos:
+## Base
+Este pacote usa a V1 como base oficial porque foi a versão que confirmou o Pix corretamente na InfinitePay.
 
-- `index.html`: controle interno da secretaria
-- `comprar.html`: página pública de venda
-- `obrigado.html`: retorno após pagamento
-- `api/criar-pagamento.js`: cria pedido no Firebase e gera link InfinitePay
-- `api/webhook-infinitepay.js`: recebe confirmação automática da InfinitePay
-- `api/verificar-pagamento.js`: confirma pagamento quando o cliente retorna ao site
-- `package.json`: dependência do Firebase Admin
+## Regra deste pacote
+O motor de pagamento foi mantido intacto.
 
-## Variáveis de ambiente no Vercel
+Arquivos preservados da V1:
+- `comprar.html`
+- `obrigado.html`
+- `package.json`
+- `api/criar-pagamento.js`
+- `api/webhook-infinitepay.js`
+- `api/verificar-pagamento.js`
 
-Configure em Project Settings > Environment Variables:
+Arquivo atualizado:
+- `index.html` — painel da secretaria/controle.
 
-```txt
-INFINITEPAY_HANDLE=piaget
-PUBLIC_BASE_URL=https://saojoao26.vercel.app
-FIREBASE_PROJECT_ID=saojoao26-fc92c
-FIREBASE_CLIENT_EMAIL=cole_aqui_o_client_email_da_service_account
-FIREBASE_PRIVATE_KEY=cole_aqui_a_private_key_da_service_account
-PRECO_INGRESSO=35
-DESCONTO_APOS_QTD=4
-DESCONTO_EXTRA_POR_INGRESSO=5
-```
+## Melhorias incluídas no painel da secretaria
+- Layout mais organizado.
+- Botões compactados em `Mais ações`.
+- Devolver pedido.
+- Excluir pedido, exigindo confirmação.
+- Filtro para devolvidos.
+- Filtro para tentativas aguardando pagamento.
+- Tentativas aguardando pagamento ficam fora dos totais.
+- Devolvidos ficam fora dos totais.
+- Confirmação manual de pagamento após conferência no app da InfinitePay.
+- Relatórios e filtros do painel preservados/melhorados.
 
-A `FIREBASE_PRIVATE_KEY` deve ser copiada do JSON da Service Account. Se o Vercel pedir uma linha só, mantenha os `\n` como aparecem no JSON.
+## O que não foi alterado
+- Criação de checkout da InfinitePay.
+- Payload enviado para InfinitePay.
+- Redirect da InfinitePay.
+- Webhook da InfinitePay.
+- Página de compra.
+- Página de obrigado.
 
-## Rotas
-
-- Secretaria: `https://saojoao26.vercel.app/`
-- Venda pública: `https://saojoao26.vercel.app/comprar.html`
-- Webhook InfinitePay: `https://saojoao26.vercel.app/api/webhook-infinitepay`
-
-## Teste
-
-1. Publique o projeto no Vercel.
-2. Abra `/comprar.html`.
-3. Faça um pedido de teste.
-4. Confira se ele aparece no `index.html` como `Aguardando pagamento`.
-5. Depois de pagar, o webhook ou a página de obrigado deve atualizar para `Pago`.
+## Teste recomendado
+Depois de subir:
+1. Teste a página de compra.
+2. Faça um Pix real pequeno.
+3. Confirme se a InfinitePay reconhece o pagamento.
+4. Confirme se o pedido entra no painel da secretaria.
+5. Só depois avançar para o Pacote 02.
