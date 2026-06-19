@@ -1,22 +1,29 @@
-# São João da Fé 2026 — Pacote 04
+# São João da Fé 2026 — Pacote 05
 
 ## Base
-Este pacote parte do Pacote 03, que já foi validado com pagamento funcionando.
+Este pacote parte do Pacote 03, que já estava validado com o pagamento funcionando.
 
-## Alterações deste pacote
-Apenas interface/experiência:
-- `comprar.html` com visual mais temático, inspirado no convite do evento.
-- `comprar.html` muito mais amigável para celular.
-- Destaque comercial para o desconto em compras com mais ingressos.
-- `obrigado.html` com visual melhorado e mais informações do evento.
-- `obrigado.html` com botão de verificar novamente e acesso ao comprovante.
+## Alteração principal
+A página de venda foi redesenhada de forma mais compacta e mobile-friendly.
+
+## Ajustes feitos em `comprar.html`
+- Header mais compacto.
+- Sem bandeirinhas/decorativos exagerados.
+- O formulário aparece mais rápido no celular.
+- O resumo da compra fica antes do botão de pagamento.
+- O resumo não fica solto depois do botão.
+- Campos e botão ajustados para celular.
+- Mensagem de desconto com linguagem comercial.
+- Dados do formulário são salvos no aparelho via `localStorage`.
+- Ao voltar da InfinitePay, o botão destrava e os dados são restaurados.
 
 ## O que NÃO foi alterado
-- `index.html`
-- `package.json`
 - `api/criar-pagamento.js`
 - `api/webhook-infinitepay.js`
 - `api/verificar-pagamento.js`
+- `obrigado.html`
+- `index.html`
+- `package.json`
 
 ## Observação
-O aviso "tem certeza que deseja sair?" ao clicar em continuar dentro da InfinitePay pode ser comportamento da própria plataforma. Este pacote não altera esse comportamento.
+Se o usuário voltar do checkout para alterar quantidade ou trocar Pix por cartão, a página deve reabilitar o botão e recuperar os dados preenchidos.
