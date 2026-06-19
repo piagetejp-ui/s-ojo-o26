@@ -188,9 +188,14 @@
 
           <label>
             WhatsApp
-            <input id="whatsapp" inputmode="tel" autocomplete="tel" placeholder="(86) 99999-9999">
+            <input id="whatsapp" required inputmode="tel" autocomplete="tel" placeholder="(86) 99999-9999">
           </label>
         </div>
+
+        <label>
+          E-mail
+          <input id="email" type="email" required autocomplete="email" placeholder="email@exemplo.com">
+        </label>
 
         <div class="grid">
           <label>
@@ -291,6 +296,7 @@
         const payload = {
           comprador: document.getElementById("comprador").value.trim(),
           whatsapp: document.getElementById("whatsapp").value.trim(),
+          email: document.getElementById("email").value.trim(),
           aluno: document.getElementById("aluno").value.trim(),
           turma: document.getElementById("turma").value,
           quantidade: c.qtd

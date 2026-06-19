@@ -1601,7 +1601,7 @@
             ${o.observacao ? `<p class="mini">Obs.: ${esc(o.observacao)}</p>` : ""}
 
             <div class="row-actions">
-              ${showDeliverButton ? `<button class="btn btn-primary" onclick="openDeliver('${escJs(o.idPedido)}')">Dar baixa</button>` : ""}
+              ${showDeliverButton ? `<button class="btn btn-primary" onclick="openDeliver('${escJs(o.idPedido)}')">Entregar</button>` : ""}
               <button class="btn btn-secondary" onclick="openEdit('${escJs(o.idPedido)}')">Editar</button>
             </div>
           </article>
@@ -1621,7 +1621,7 @@
       if (aguardandoPagamento) {
         primary = `<button class="btn btn-success" onclick="verifyPayment('${id}')">Verificar pagamento</button>`;
       } else if (pago && !devolvido && !entregue) {
-        primary = `<button class="btn btn-primary" onclick="openDeliver('${id}')">Dar baixa</button>`;
+        primary = `<button class="btn btn-primary" onclick="openDeliver('${id}')">Entregar</button>`;
       } else {
         primary = `<button class="btn btn-secondary" onclick="openEdit('${id}')">Editar</button>`;
       }
@@ -1815,7 +1815,7 @@
       if (!o) return;
 
       if (!isPaymentConfirmed(o)) {
-        alert("Esse pedido ainda não está com pagamento confirmado. Confira o pagamento antes de dar baixa.");
+        alert("Esse pedido ainda não está com pagamento confirmado. Confira o pagamento antes de entregar.");
         return;
       }
 

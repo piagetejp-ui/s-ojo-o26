@@ -1,46 +1,28 @@
-# São João da Fé 2026 — Pacote 01
+# São João da Fé 2026 — Pacote 03
 
 ## Base
-Este pacote usa a V1 como base oficial porque foi a versão que confirmou o Pix corretamente na InfinitePay.
+Este pacote parte do Pacote 02.
 
-## Regra deste pacote
-O motor de pagamento foi mantido intacto.
+## Objetivo
+Enviar também o e-mail para a InfinitePay, mantendo o restante do checkout igual.
 
-Arquivos preservados da V1:
-- `comprar.html`
-- `obrigado.html`
-- `package.json`
-- `api/criar-pagamento.js`
-- `api/webhook-infinitepay.js`
-- `api/verificar-pagamento.js`
+## Alteração feita
+Apenas `api/criar-pagamento.js` foi alterado para incluir no payload da InfinitePay:
 
-Arquivo atualizado:
-- `index.html` — painel da secretaria/controle.
+- `customer.name`
+- `customer.email`
+- `customer.phone_number`
 
-## Melhorias incluídas no painel da secretaria
-- Layout mais organizado.
-- Botões compactados em `Mais ações`.
-- Devolver pedido.
-- Excluir pedido, exigindo confirmação.
-- Filtro para devolvidos.
-- Filtro para tentativas aguardando pagamento.
-- Tentativas aguardando pagamento ficam fora dos totais.
-- Devolvidos ficam fora dos totais.
-- Confirmação manual de pagamento após conferência no app da InfinitePay.
-- Relatórios e filtros do painel preservados/melhorados.
+## O que foi mantido
+- `redirect_url` igual
+- `webhook_url` igual
+- item único com valor total
+- sem `address`
+- `comprar.html` igual ao Pacote 02
+- `index.html` igual ao Pacote 02
+- `obrigado.html` igual
+- `api/webhook-infinitepay.js` igual
+- `api/verificar-pagamento.js` igual
 
-## O que não foi alterado
-- Criação de checkout da InfinitePay.
-- Payload enviado para InfinitePay.
-- Redirect da InfinitePay.
-- Webhook da InfinitePay.
-- Página de compra.
-- Página de obrigado.
-
-## Teste recomendado
-Depois de subir:
-1. Teste a página de compra.
-2. Faça um Pix real pequeno.
-3. Confirme se a InfinitePay reconhece o pagamento.
-4. Confirme se o pedido entra no painel da secretaria.
-5. Só depois avançar para o Pacote 02.
+## Risco conhecido
+Se o checkout parar de reconhecer o Pix automaticamente, já sabemos que a variável nova foi o envio de `customer.email` para a InfinitePay.

@@ -83,12 +83,17 @@ module.exports = async function handler(req, res) {
 
     const comprador = String(body.comprador || "").trim();
     const whatsapp = String(body.whatsapp || "").trim();
+    const email = String(body.email || "").trim().toLowerCase();
     const aluno = String(body.aluno || "").trim();
     const turma = String(body.turma || "").trim();
     const quantidade = Math.max(1, Math.floor(Number(body.quantidade) || 1));
 
-    if (!comprador || !aluno || !turma) {
-      return json(res, 400, { error: "Informe comprador, aluno e turma." });
+    if (!comprador || !whatsapp || !email || !aluno || !turma) {
+      return json(res, 400, { error: "Informe comprador, WhatsApp, e-mail, aluno e turma." });
+    }
+
+    if (!/^\S+@\S+\.\S+$/.test(email)) {
+      return json(res, 400, { error: "Informe um e-mail válido." });
     }
 
     const handle = process.env.INFINITEPAY_HANDLE || "piaget";
@@ -101,6 +106,7 @@ module.exports = async function handler(req, res) {
       idPedido: orderNsu,
       comprador,
       whatsapp,
+      email,
       aluno,
       turma,
       dataCompra: agora,
@@ -148,13 +154,15 @@ module.exports = async function handler(req, res) {
     const phone = normalizePhone(whatsapp);
     if (phone) {
       payloadInfinite.customer = {
-        name: comprador,
-        phone_number: phone
-      };
+      name: comprador,
+      email,
+      phone_number: phone
+    };
     } else {
       payloadInfinite.customer = {
-        name: comprador
-      };
+      name: comprador,
+      email
+    };
     }
 
     const response = await fetch("https://api.checkout.infinitepay.io/links", {
